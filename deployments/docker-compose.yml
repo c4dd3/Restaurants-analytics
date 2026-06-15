@@ -1,0 +1,263 @@
+# ============================================================================
+# Restaurants-analytics — Stack de Analítica y Procesamiento OLAP
+# Proyecto 2 — Base de Datos 2, TEC
+#
+# Requisito previo:
+#   El stack del Proyecto 1 debe estar levantado. Luego correr desde la raíz:
+#       make setup   ← detecta el nombre de la red re2 y genera .env
+#       make up      ← levanta este stack
+#
+# Puertos expuestos:
+#   HiveServer2 UI  → http://localhost:10002
+#   Spark Master UI → http://localhost:8090
+#   Airflow UI      → http://localhost:8085  (admin / admin)
+#   Neo4J Browser   → http://localhost:7474
+#   Metabase        → http://localhost:3000
+# ============================================================================
+
+services:
+
+  # --------------------------------------------------------------------------
+  #  Postgres interno — metastore de Hive, metadata de Airflow y Metabase
+  # --------------------------------------------------------------------------
+  analytics-db:
+    image: postgres:16-alpine
+    container_name: ra_analytics_db
+    environment:
+      POSTGRES_USER: ${ANALYTICS_DB_USER:-analytics}
+      POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWORD:-analytics}
+      POSTGRES_DB: hive_metastore
+    volumes:
+      - analytics_db_data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ANALYTICS_DB_USER:-analytics}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [ra_net]
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  #  Apache Hive — Metastore
+  #  Imagen custom: agrega el driver JDBC de PostgreSQL.
+  # --------------------------------------------------------------------------
+  hive-metastore:
+    build:
+      context: .
+      dockerfile: Dockerfile.hive
+    container_name: ra_hive_metastore
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://analytics-db:5432/hive_metastore
+        -Djavax.jdo.option.ConnectionUserName=${ANALYTICS_DB_USER:-analytics}
+        -Djavax.jdo.option.ConnectionPassword=${ANALYTICS_DB_PASSWORD:-analytics}
+    volumes:
+      - hive_warehouse:/opt/hive/data/warehouse
+      - ../hive/schema:/opt/hive/schema:ro
+    ports:
+      - "9083:9083"
+    healthcheck:
+      # TCP check sin nc: usa bash built-in para no depender de herramientas externas
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9083' 2>/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    networks: [ra_net]
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  #  Apache Hive — HiveServer2
+  # --------------------------------------------------------------------------
+  hive-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.hive
+    container_name: ra_hive_server
+    depends_on:
+      hive-metastore:
+        condition: service_healthy
+    environment:
+      SERVICE_NAME: hiveserver2
+      IS_RESUME: "true"
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://analytics-db:5432/hive_metastore
+        -Djavax.jdo.option.ConnectionUserName=${ANALYTICS_DB_USER:-analytics}
+        -Djavax.jdo.option.ConnectionPassword=${ANALYTICS_DB_PASSWORD:-analytics}
+        -Dhive.metastore.uris=thrift://hive-metastore:9083
+    volumes:
+      - hive_warehouse:/opt/hive/data/warehouse
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+    networks: [ra_net]
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  #  Apache Spark — Master
+  # --------------------------------------------------------------------------
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: ra_spark_master
+    environment:
+      SPARK_MODE: master
+      SPARK_MASTER_OPTS: "-Dspark.deploy.defaultCores=2"
+    volumes:
+      - ../spark:/opt/spark-apps
+      - hive_warehouse:/opt/hive/data/warehouse
+      - ../spark/conf/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
+      - ../spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+    ports:
+      - "8090:8080"
+      - "7077:7077"
+    networks: [ra_net, re2_net]
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  #  Apache Spark — Worker
+  # --------------------------------------------------------------------------
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: ra_spark_worker
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY:-2G}
+      SPARK_WORKER_CORES: ${SPARK_WORKER_CORES:-2}
+    volumes:
+      - ../spark:/opt/spark-apps
+      - hive_warehouse:/opt/hive/data/warehouse
+      - ../spark/conf/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
+      - ../spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+    networks: [ra_net, re2_net]
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  #  Apache Airflow — Webserver + Scheduler
+  #  Imagen custom: agrega providers de Spark, Mongo y Postgres.
+  # --------------------------------------------------------------------------
+  airflow:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile.airflow
+    container_name: ra_airflow
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${ANALYTICS_DB_USER:-analytics}:${ANALYTICS_DB_PASSWORD:-analytics}@analytics-db:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "30"
+      PG_CONN_STR: postgresql://${PG_USER:-postgres}:${PG_PASSWORD:-postgres}@${PG_HOST:-re2_postgres}:5432/${PG_DB:-restaurants}
+      MONGO_URI: ${MONGO_URI:-mongodb://re2_mongos:27017/restaurants}
+      SPARK_MASTER_URL: spark://spark-master:7077
+      HIVE_METASTORE_URI: thrift://hive-metastore:9083
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/plugins:/opt/airflow/plugins
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "8085:8080"
+    entrypoint: ["/bin/bash", "/opt/airflow/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks: [ra_net, re2_net]
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  #  Neo4J — Grafos (usuarios, productos, pedidos, rutas de entrega)
+  # --------------------------------------------------------------------------
+  neo4j:
+    image: neo4j:5.20
+    container_name: ra_neo4j
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-Analytics2024!}
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*,gds.*"
+      NEO4J_dbms_memory_heap_initial__size: "512m"
+      NEO4J_dbms_memory_heap_max__size: "1G"
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - ../neo4j/import:/var/lib/neo4j/import
+      - ../neo4j/queries:/var/lib/neo4j/queries:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [ra_net]
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  #  Metabase — Dashboards de visualización
+  # --------------------------------------------------------------------------
+  metabase:
+    image: metabase/metabase:v0.50.0
+    container_name: ra_metabase
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: analytics-db
+      MB_DB_PORT: 5432
+      MB_DB_USER: ${ANALYTICS_DB_USER:-analytics}
+      MB_DB_PASS: ${ANALYTICS_DB_PASSWORD:-analytics}
+      MB_DB_DBNAME: metabase
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../dashboards/metabase/exports:/metabase-exports
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks: [ra_net, re2_net]
+    restart: unless-stopped
+
+# ------------------------------------------------------------------------------
+#  Volúmenes
+# ------------------------------------------------------------------------------
+volumes:
+  analytics_db_data:
+  hive_warehouse:
+  airflow_logs:
+  neo4j_data:
+  neo4j_logs:
+
+# ------------------------------------------------------------------------------
+#  Redes
+#  re2_net: red externa del Proyecto 1.
+#  El nombre exacto lo genera `make setup` en el Makefile raíz.
+# ------------------------------------------------------------------------------
+networks:
+  ra_net:
+    driver: bridge
+    name: ra_net
+  re2_net:
+    external: true
+    name: ${RE2_NETWORK_NAME:-re2_net}

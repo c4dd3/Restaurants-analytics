@@ -1,0 +1,17 @@
+# =============================================================================
+# Dockerfile.hive
+# Extiende apache/hive:4.0.0 agregando el driver JDBC de PostgreSQL.
+# La imagen base no lo incluye, pero es necesario para que el metastore
+# pueda conectarse al Postgres interno (analytics-db).
+# =============================================================================
+
+FROM apache/hive:4.0.0
+
+USER root
+
+# Driver JDBC de PostgreSQL 42.7.3 (compatible con Postgres 16)
+RUN curl -fSL \
+    https://jdbc.postgresql.org/download/postgresql-42.7.3.jar \
+    -o /opt/hive/lib/postgresql-42.7.3.jar
+
+USER hive

@@ -1,0 +1,15 @@
+# =============================================================================
+# Dockerfile.airflow
+# Extiende apache/airflow:2.9.3 con los providers necesarios para el proyecto.
+# Build context: raíz del repo (para acceder a airflow/requirements.txt)
+# =============================================================================
+
+FROM apache/airflow:2.9.3
+
+# Instalar providers y dependencias del proyecto
+COPY airflow/requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
+
+# Script de arranque (inicializa la BD y levanta webserver + scheduler)
+COPY deployments/airflow/entrypoint.sh /opt/airflow/entrypoint.sh
+RUN chmod +x /opt/airflow/entrypoint.sh

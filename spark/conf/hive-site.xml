@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  hive-site.xml — Configuración de Hive para Apache Spark
+  Montado en /opt/bitnami/spark/conf/ en los contenedores spark-master y spark-worker.
+  Le indica a Spark dónde está el metastore de Hive (thrift://hive-metastore:9083)
+  para que pueda leer y escribir tablas del Data Warehouse directamente.
+-->
+<configuration>
+
+  <!-- URI del Hive Metastore Thrift Server -->
+  <property>
+    <name>hive.metastore.uris</name>
+    <value>thrift://hive-metastore:9083</value>
+    <description>Thrift URI del metastore. Spark lo usa para resolver tablas de Hive.</description>
+  </property>
+
+  <!-- Directorio del warehouse (debe coincidir con el volumen hive_warehouse) -->
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/opt/hive/data/warehouse</value>
+  </property>
+
+  <!-- Deshabilitar verificación de versión del metastore (evita errores de compatibilidad) -->
+  <property>
+    <name>hive.metastore.schema.verification</name>
+    <value>false</value>
+  </property>
+
+  <!-- Permitir acceso sin autenticación (entorno de desarrollo) -->
+  <property>
+    <name>hive.server2.authentication</name>
+    <value>NONE</value>
+  </property>
+
+</configuration>
