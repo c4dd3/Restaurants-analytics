@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Esquema Estrella — restaurants_dw</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; color: #0f172a; }
+  .header p  { margin-top: 6px; font-size: 14px; color: #64748b; }
+  .badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #eff6ff;
+    color: #3b82f6;
+    border: 1px solid #bfdbfe;
+  }
+  .badge + .badge { margin-left: 6px; background:#fffbeb; color:#f59e0b; border-color:#fde68a; }
+
+  /* ── SECCIÓN ── */
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #94a3b8;
+    margin-bottom: 16px;
+  }
+
+  /* ── DIAGRAMA ESTRELLA ── */
+  .star-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 16px;
+    max-width: 860px;
+    margin: 0 auto;
+    align-items: center;
+  }
+  .star-center-row {
+    display: contents;
+  }
+
+  /* ── TARJETAS ── */
+  .card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    background: white;
+  }
+  .card-header {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+  .card-body { padding: 12px 14px; }
+
+  /* Dimensión — azul */
+  .dim .card-header { background: #3b82f6; color: white; }
+  .dim { border: 2px solid #3b82f6; }
+
+  /* Hecho — amarillo/ámbar */
+  .fact .card-header { background: #f59e0b; color: white; }
+  .fact { border: 2px solid #f59e0b; }
+
+  .card-subtitle {
+    font-size: 10px;
+    opacity: .8;
+    font-weight: 400;
+    margin-top: 1px;
+  }
+
+  /* ── FILAS DE COLUMNAS ── */
+  .col-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 12px;
+  }
+  .col-row:last-child { border-bottom: none; }
+  .col-icon { font-size: 11px; margin-top: 1px; flex-shrink: 0; }
+  .col-name { font-weight: 600; color: #334155; }
+  .col-type { color: #94a3b8; font-size: 10.5px; margin-left: 4px; }
+  .col-desc { font-size: 10.5px; color: #94a3b8; margin-top: 1px; }
+
+  /* ── CONECTORES VISUALES ── */
+  .connector-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    grid-column: 1 / -1;
+    position: relative;
+    height: 40px;
+  }
+  .connector-h {
+    display: flex;
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+  }
+  .connector-h::before {
+    content: '';
+    position: absolute;
+    left: 16.5%;
+    right: 16.5%;
+    top: 50%;
+    height: 2px;
+    background: #cbd5e1;
+    border-radius: 1px;
+  }
+  .connector-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .connector-line-v {
+    width: 2px;
+    height: 24px;
+    background: #cbd5e1;
+    margin: 0 auto;
+    border-radius: 1px;
+  }
+  .arrow-down {
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid #cbd5e1;
+    margin: 0 auto;
+  }
+  .arrow-up {
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 7px solid #cbd5e1;
+    margin: 0 auto;
+  }
+
+  /* Pill de relación */
+  .rel-pill {
+    font-size: 9.5px;
+    background: #f1f5f9;
+    color: #64748b;
+    border-radius: 99px;
+    padding: 2px 8px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  /* ── SECCIÓN VISTAS OLAP ── */
+  .views-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .view-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #8b5cf6;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .view-number {
+    font-size: 10px;
+    font-weight: 700;
+    color: #8b5cf6;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .view-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .view-desc { font-size: 12px; color: #64748b; margin-top: 6px; }
+  .view-dashboard {
+    margin-top: 8px;
+    font-size: 10.5px;
+    color: #94a3b8;
+  }
+  .view-dashboard strong { color: #64748b; }
+
+  /* ── SECCIÓN FLUJO ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px 24px;
+    max-width: 860px;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 100px;
+  }
+  .flow-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .flow-label { font-size: 11px; font-weight: 600; color: #334155; text-align: center; }
+  .flow-sub   { font-size: 10px; color: #94a3b8; text-align: center; }
+  .flow-arrow {
+    flex: 1;
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 20px;
+    min-width: 30px;
+  }
+
+  /* ── LEYENDA ── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #64748b;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <h1>Esquema Estrella — <code>restaurants_dw</code></h1>
+  <p>Data Warehouse del Proyecto 2 · Base de Datos 2 · TEC · Prof. Kenneth Obando</p>
+  <span class="badge">4 Dimensiones</span>
+  <span class="badge">2 Tablas de hechos</span>
+  <span class="badge" style="background:#f5f3ff;color:#8b5cf6;border-color:#ddd6fe;">6 Vistas OLAP</span>
+</div>
+
+<!-- ══ SECCIÓN 1: CONCEPTO ══ -->
+<div class="section">
+  <div class="section-title">¿Qué es y para qué sirve?</div>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#eff6ff;">🗄️</div>
+      <div class="flow-label">Proyecto 1</div>
+      <div class="flow-sub">Postgres / MongoDB<br>Datos operacionales</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#fefce8;">⚡</div>
+      <div class="flow-label">Apache Spark</div>
+      <div class="flow-sub">Lee, transforma<br>y carga</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#fffbeb;">🏭</div>
+      <div class="flow-label">Apache Hive</div>
+      <div class="flow-sub">Data Warehouse<br>Esquema estrella</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#f5f3ff;">📊</div>
+      <div class="flow-label">Metabase</div>
+      <div class="flow-sub">Dashboards<br>y reportes</div>
+    </div>
+  </div>
+  <p style="margin-top:14px;font-size:13px;color:#64748b;max-width:860px;">
+    El Data Warehouse es una <strong>copia reorganizada</strong> de los datos del Proyecto 1,
+    optimizada para análisis. Mientras la base operacional responde "dame el pedido #123",
+    el warehouse responde "¿cuánto vendimos en marzo por categoría de producto?".
+  </p>
+</div>
+
+<!-- ══ SECCIÓN 2: DIAGRAMA ══ -->
+<div class="section">
+  <div class="section-title">Diagrama del esquema estrella</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div> Dimensión — responde quién, qué, cuándo, dónde</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> Tabla de hechos — guarda los números a analizar</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#cbd5e1;border-radius:1px;height:3px;width:20px;"></div> Llave foránea (FK) que conecta ambas</div>
+  </div>
+
+  <!-- FILA SUPERIOR: dim_tiempo centrada -->
+  <div style="max-width:860px;margin:0 auto;">
+
+    <!-- dim_tiempo -->
+    <div style="display:flex;justify-content:center;margin-bottom:0;">
+      <div class="card dim" style="width:320px;">
+        <div class="card-header">
+          🕐 dim_tiempo
+          <div class="card-subtitle">Dimensión temporal — generada desde los timestamps</div>
+        </div>
+        <div class="card-body">
+          <div class="col-row"><span class="col-icon">🔑</span><div><div class="col-name">tiempo_key <span class="col-type">BIGINT</span></div><div class="col-desc">Formato YYYYMMDDhh — ej: 2024061520</div></div></div>
+          <div class="col-row"><span class="col-icon">📅</span><div><div class="col-name">fecha <span class="col-type">DATE</span></div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">anio · trimestre · mes <span class="col-type">INT</span></div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">nombre_mes · semana · dia <span class="col-type">STRING / INT</span></div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">hora · nombre_dia · es_fin_semana</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conectores desde dim_tiempo hacia abajo -->
+    <div style="display:flex;justify-content:space-between;max-width:680px;margin:0 auto;padding:0 40px;">
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div class="connector-line-v"></div>
+        <div class="arrow-down"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div class="connector-line-v"></div>
+        <div class="arrow-down"></div>
+      </div>
+    </div>
+
+    <!-- FILA MEDIA: dim_usuario | facts | dim_restaurante -->
+    <div style="display:grid;grid-template-columns:180px 1fr 1fr 180px;gap:12px;align-items:start;">
+
+      <!-- dim_usuario -->
+      <div class="card dim">
+        <div class="card-header">
+          👤 dim_usuario
+          <div class="card-subtitle">Clientes y admins</div>
+        </div>
+        <div class="card-body">
+          <div class="col-row"><span class="col-icon">🔑</span><div><div class="col-name">usuario_key <span class="col-type">BIGINT</span></div></div></div>
+          <div class="col-row"><span class="col-icon">🆔</span><div><div class="col-name">usuario_id <span class="col-type">STRING</span></div><div class="col-desc">UUID del Proyecto 1</div></div></div>
+          <div class="col-row"><span class="col-icon">📝</span><div><div class="col-name">nombre <span class="col-type">STRING</span></div></div></div>
+          <div class="col-row"><span class="col-icon">📝</span><div><div class="col-name">rol <span class="col-type">STRING</span></div><div class="col-desc">client | admin</div></div></div>
+          <div class="col-row"><span class="col-icon">📅</span><div><div class="col-name">fecha_registro <span class="col-type">DATE</span></div></div></div>
+        </div>
+      </div>
+
+      <!-- fact_items_pedido -->
+      <div class="card fact">
+        <div class="card-header">
+          ⭐ fact_items_pedido
+          <div class="card-subtitle">Tabla de hechos principal — un ítem por fila</div>
+        </div>
+        <div class="card-body">
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">tiempo_key <span class="col-type">BIGINT</span></div><div class="col-desc">FK → dim_tiempo</div></div></div>
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">usuario_key <span class="col-type">BIGINT</span></div><div class="col-desc">FK → dim_usuario</div></div></div>
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">restaurante_key <span class="col-type">BIGINT</span></div><div class="col-desc">FK → dim_restaurante</div></div></div>
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">producto_key <span class="col-type">BIGINT</span></div><div class="col-desc">FK → dim_producto</div></div></div>
+          <div style="border-top:1px dashed #fde68a;margin:6px 0;"></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">cantidad <span class="col-type">INT</span></div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">precio_unitario <span class="col-type">DECIMAL</span></div><div class="col-desc">Snapshot al momento del pedido</div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">monto_total <span class="col-type">DECIMAL</span></div><div class="col-desc">cantidad × precio_unitario</div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">estado_pedido <span class="col-type">STRING</span></div><div class="col-desc">pending | confirmed | cancelled</div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">es_para_llevar <span class="col-type">BOOLEAN</span></div></div></div>
+        </div>
+      </div>
+
+      <!-- fact_reservaciones -->
+      <div class="card fact">
+        <div class="card-header">
+          ⭐ fact_reservaciones
+          <div class="card-subtitle">Ocupación y cancelaciones</div>
+        </div>
+        <div class="card-body">
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">tiempo_key <span class="col-type">BIGINT</span></div><div class="col-desc">FK → dim_tiempo</div></div></div>
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">usuario_key <span class="col-type">BIGINT</span></div><div class="col-desc">FK → dim_usuario</div></div></div>
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">restaurante_key <span class="col-type">BIGINT</span></div><div class="col-desc">FK → dim_restaurante</div></div></div>
+          <div style="border-top:1px dashed #fde68a;margin:6px 0;"></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">tamano_grupo <span class="col-type">INT</span></div><div class="col-desc">party_size del Proyecto 1</div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">estado <span class="col-type">STRING</span></div><div class="col-desc">pending | confirmed | cancelled</div></div></div>
+          <div class="col-row"><span class="col-icon">🆔</span><div><div class="col-name">reservacion_id <span class="col-type">STRING</span></div><div class="col-desc">UUID para trazabilidad</div></div></div>
+        </div>
+      </div>
+
+      <!-- dim_restaurante -->
+      <div class="card dim">
+        <div class="card-header">
+          🏠 dim_restaurante
+          <div class="card-subtitle">Locales y zonas</div>
+        </div>
+        <div class="card-body">
+          <div class="col-row"><span class="col-icon">🔑</span><div><div class="col-name">restaurante_key <span class="col-type">BIGINT</span></div></div></div>
+          <div class="col-row"><span class="col-icon">🆔</span><div><div class="col-name">restaurante_id <span class="col-type">STRING</span></div><div class="col-desc">UUID del Proyecto 1</div></div></div>
+          <div class="col-row"><span class="col-icon">📝</span><div><div class="col-name">nombre <span class="col-type">STRING</span></div></div></div>
+          <div class="col-row"><span class="col-icon">📝</span><div><div class="col-name">direccion <span class="col-type">STRING</span></div><div class="col-desc">Usada como zona geográfica</div></div></div>
+          <div class="col-row"><span class="col-icon">📊</span><div><div class="col-name">capacidad <span class="col-type">INT</span></div></div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Conectores hacia dim_producto -->
+    <div style="display:flex;justify-content:center;margin-top:0;">
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div class="connector-line-v"></div>
+        <div class="arrow-down"></div>
+      </div>
+    </div>
+
+    <!-- dim_producto -->
+    <div style="display:flex;justify-content:center;">
+      <div class="card dim" style="width:360px;">
+        <div class="card-header">
+          🍔 dim_producto
+          <div class="card-subtitle">Ítems del menú por categoría</div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+            <div class="col-row"><span class="col-icon">🔑</span><div><div class="col-name">producto_key <span class="col-type">BIGINT</span></div></div></div>
+            <div class="col-row"><span class="col-icon">🆔</span><div><div class="col-name">producto_id <span class="col-type">STRING</span></div></div></div>
+            <div class="col-row"><span class="col-icon">📝</span><div><div class="col-name">nombre <span class="col-type">STRING</span></div></div></div>
+            <div class="col-row"><span class="col-icon">🏷️</span><div><div class="col-name">categoria <span class="col-type">STRING</span></div></div></div>
+            <div class="col-row"><span class="col-icon">💰</span><div><div class="col-name">precio_actual <span class="col-type">DECIMAL</span></div></div></div>
+            <div class="col-row"><span class="col-icon">✅</span><div><div class="col-name">disponible <span class="col-type">BOOLEAN</span></div></div></div>
+          </div>
+          <div class="col-row"><span class="col-icon">🔗</span><div><div class="col-name">restaurante_id <span class="col-type">STRING</span></div><div class="col-desc">Desnormalizado — evita un join extra al consultar</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nota: dim_producto solo conecta a fact_items_pedido -->
+    <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px;">
+      ⚠️ <code>dim_producto</code> solo conecta a <code>fact_items_pedido</code> — las reservaciones no tienen productos asociados.
+    </p>
+
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 3: VISTAS OLAP ══ -->
+<div class="section">
+  <div class="section-title">Vistas OLAP — consultas pre-armadas</div>
+  <p style="font-size:13px;color:#64748b;margin-bottom:16px;max-width:860px;">
+    Son preguntas complejas guardadas con nombre. Metabase las lee directamente para dibujar los dashboards.
+    Están construidas sobre las tablas de hechos y dimensiones.
+  </p>
+  <div class="views-grid" style="max-width:860px;">
+
+    <div class="view-card">
+      <div class="view-number">Vista 1</div>
+      <div class="view-name">olap_ingresos_por_mes_categoria</div>
+      <div class="view-desc">Agrupa ingresos y pedidos por mes y categoría de producto.</div>
+      <div class="view-dashboard"><strong>Dashboard:</strong> Ingresos por mes y categoría</div>
+    </div>
+
+    <div class="view-card">
+      <div class="view-number">Vista 2</div>
+      <div class="view-name">olap_actividad_usuarios_por_restaurante</div>
+      <div class="view-desc">Usuarios únicos, pedidos e ingresos agrupados por restaurante y zona.</div>
+      <div class="view-dashboard"><strong>Dashboard:</strong> Actividad por zona geográfica</div>
+    </div>
+
+    <div class="view-card">
+      <div class="view-number">Vista 3</div>
+      <div class="view-name">olap_estado_pedidos</div>
+      <div class="view-desc">Conteo y porcentaje de pedidos por estado (confirmed / cancelled / pending).</div>
+      <div class="view-dashboard"><strong>Dashboard:</strong> Pedidos completados vs cancelados</div>
+    </div>
+
+    <div class="view-card">
+      <div class="view-number">Vista 4</div>
+      <div class="view-name">olap_tendencias_consumo</div>
+      <div class="view-desc">Ranking de productos más vendidos por categoría y mes. Análisis Spark #1.</div>
+      <div class="view-dashboard"><strong>Análisis Spark:</strong> tendencias de consumo</div>
+    </div>
+
+    <div class="view-card">
+      <div class="view-number">Vista 5</div>
+      <div class="view-name">olap_horarios_pico</div>
+      <div class="view-desc">Pedidos, unidades e ingresos agrupados por hora y día de semana. Análisis Spark #2.</div>
+      <div class="view-dashboard"><strong>Análisis Spark:</strong> horarios pico</div>
+    </div>
+
+    <div class="view-card">
+      <div class="view-number">Vista 6</div>
+      <div class="view-name">olap_crecimiento_mensual</div>
+      <div class="view-desc">Crecimiento MoM de ingresos con % de variación respecto al mes anterior. Análisis Spark #3.</div>
+      <div class="view-dashboard"><strong>Análisis Spark:</strong> crecimiento mensual</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 4: ORDEN DE CARGA ══ -->
+<div class="section">
+  <div class="section-title">Orden de ejecución (Airflow DAG)</div>
+  <div class="flow" style="max-width:860px;">
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#eff6ff;font-size:16px;">1️⃣</div>
+      <div class="flow-label">cargar_dimensiones.py</div>
+      <div class="flow-sub">dim_tiempo<br>dim_usuario<br>dim_restaurante<br>dim_producto</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#fffbeb;font-size:16px;">2️⃣</div>
+      <div class="flow-label">cargar_fact_items<br>_pedido.py</div>
+      <div class="flow-sub">Depende de<br>las 4 dims</div>
+    </div>
+    <div style="display:flex;align-items:center;color:#cbd5e1;font-size:14px;">⇅</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#fffbeb;font-size:16px;">3️⃣</div>
+      <div class="flow-label">cargar_fact_<br>reservaciones.py</div>
+      <div class="flow-sub">Depende de<br>3 dims (sin producto)</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#f5f3ff;font-size:16px;">4️⃣</div>
+      <div class="flow-label">Vistas OLAP</div>
+      <div class="flow-sub">Se leen desde<br>Metabase</div>
+    </div>
+  </div>
+  <p style="margin-top:12px;font-size:12px;color:#94a3b8;max-width:860px;">
+    Los jobs 2️⃣ y 3️⃣ pueden correr en paralelo una vez que las dimensiones están cargadas.
+    Las vistas OLAP no se "cargan" — son consultas que Metabase ejecuta al abrir el dashboard.
+  </p>
+</div>
+
+<div style="text-align:center;margin-top:32px;font-size:11px;color:#cbd5e1;">
+  Proyecto 2 · Base de Datos 2 · TEC · Prof. Kenneth Obando Rodríguez
+</div>
+
+</body>
+</html>
