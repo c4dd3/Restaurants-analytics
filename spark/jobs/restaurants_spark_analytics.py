@@ -522,16 +522,38 @@ def write_csv_folder(df: DataFrame, path: str) -> None:
 
 def write_single_csv(df: DataFrame, folder: str, filename: str) -> None:
     os.makedirs(folder, exist_ok=True)
-    temp_dir = tempfile.mkdtemp(prefix="spark-export-")
-    try:
-        df.coalesce(1).write.mode("overwrite").option("header", True).csv(temp_dir)
-        part_files = [name for name in os.listdir(temp_dir) if name.startswith("part-") and name.endswith(".csv")]
-        if not part_files:
-            raise RuntimeError(f"Spark no generó archivo part en {temp_dir}")
-        shutil.move(os.path.join(temp_dir, part_files[0]), os.path.join(folder, filename))
-    finally:
+
+    temp_dir = os.path.join(folder, f"__tmp_{filename.replace('.csv', '')}")
+
+    if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir, ignore_errors=True)
 
+    try:
+        (
+            df.coalesce(1)
+            .write
+            .mode("overwrite")
+            .option("header", True)
+            .csv(temp_dir)
+        )
+
+        part_files = [
+            name for name in os.listdir(temp_dir)
+            if name.startswith("part-") and name.endswith(".csv")
+        ]
+
+        if not part_files:
+            raise RuntimeError(f"Spark no generó archivo part en {temp_dir}")
+
+        final_path = os.path.join(folder, filename)
+
+        if os.path.exists(final_path):
+            os.remove(final_path)
+
+        shutil.move(os.path.join(temp_dir, part_files[0]), final_path)
+
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 def export_neo4j_files(data: Dict[str, DataFrame], analysis: Dict[str, DataFrame], routes: DataFrame, cfg: AppConfig) -> None:
     users = data["users"].select("user_id", "name", "zone")

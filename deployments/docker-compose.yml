@@ -116,6 +116,7 @@ services:
       SPARK_MASTER_OPTS: "-Dspark.deploy.defaultCores=2"
     volumes:
       - ../spark:/opt/spark-apps
+      - ../neo4j/import:/opt/neo4j-import
       - hive_warehouse:/opt/hive/data/warehouse
       - ../spark/conf/hive-site.xml:/opt/spark/conf/hive-site.xml:ro
       - ../spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
@@ -143,6 +144,7 @@ services:
       - ${SPARK_WORKER_MEMORY:-2G}
     volumes:
       - ../spark:/opt/spark-apps
+      - ../neo4j/import:/opt/neo4j-import
       - hive_warehouse:/opt/hive/data/warehouse
       - ../spark/conf/hive-site.xml:/opt/spark/conf/hive-site.xml:ro
       - ../spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
@@ -196,8 +198,8 @@ services:
     container_name: ra_neo4j
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-Analytics2024!}
-      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
-      NEO4J_dbms_security_procedures_unrestricted: "apoc.*,gds.*"
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
       NEO4J_dbms_memory_heap_initial__size: "512m"
       NEO4J_dbms_memory_heap_max__size: "1G"
     ports:

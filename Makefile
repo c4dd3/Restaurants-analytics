@@ -55,5 +55,25 @@ neo4j-shell:
 
 .PHONY: spark-shell
 spark-shell:
-	docker exec -it ra_spark_master /opt/bitnami/spark/bin/spark-shell \
+	docker exec -it ra_spark_master /opt/spark/bin/spark-shell \
 		--master spark://spark-master:7077
+
+
+.PHONY: spark-job-sample
+spark-job-sample:
+	docker exec -it ra_spark_master /opt/spark/bin/spark-submit \
+		--master spark://spark-master:7077 \
+		/opt/spark-apps/jobs/restaurants_spark_analytics.py \
+		--source sample \
+		--output-base /tmp/restaurants-output \
+		--neo4j-output /opt/neo4j-import \
+		--couriers 2
+
+.PHONY: neo4j-load
+neo4j-load:
+	docker exec -i ra_neo4j cypher-shell -u neo4j -p $$(grep NEO4J_PASSWORD .env | cut -d= -f2) < neo4j/queries/00_constraints.cypher
+	docker exec -i ra_neo4j cypher-shell -u neo4j -p $$(grep NEO4J_PASSWORD .env | cut -d= -f2) < neo4j/queries/01_load_graph.cypher
+
+.PHONY: neo4j-analysis
+neo4j-analysis:
+	docker exec -i ra_neo4j cypher-shell -u neo4j -p $$(grep NEO4J_PASSWORD .env | cut -d= -f2) < neo4j/queries/02_analysis_queries.cypher
