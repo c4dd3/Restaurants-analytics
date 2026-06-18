@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apache Airflow — DAG ETL Explicado</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+
+  /* ── HEADER ── */
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .badges { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge {
+    padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
+    border: 1px solid;
+  }
+  .badge-blue   { background: #eff6ff; color: #3b82f6; border-color: #bfdbfe; }
+  .badge-green  { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+  .badge-purple { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+  .badge-orange { background: #fff7ed; color: #ea580c; border-color: #fed7aa; }
+
+  /* ── SECCIONES ── */
+  .section { margin-bottom: 44px; max-width: 900px; margin-left: auto; margin-right: auto; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #94a3b8; margin-bottom: 14px;
+  }
+
+  /* ── CONCEPTO BOX ── */
+  .concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .concept-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 16px; border-left: 4px solid;
+  }
+  .concept-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .concept-card p  { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+  /* ── DAG FLOW ── */
+  .dag-flow {
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 28px 24px;
+  }
+  .flow-row {
+    display: flex; align-items: center; justify-content: center; gap: 0;
+    margin-bottom: 0;
+  }
+  .flow-col { display: flex; flex-direction: column; align-items: center; }
+
+  /* Nodo de tarea */
+  .task-node {
+    border-radius: 8px; padding: 10px 16px; min-width: 180px;
+    text-align: center; border: 2px solid; position: relative;
+  }
+  .task-type {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; opacity: .75; margin-bottom: 3px;
+  }
+  .task-id   { font-size: 12px; font-weight: 700; }
+  .task-desc { font-size: 10px; margin-top: 3px; opacity: .8; }
+
+  /* Colores por tipo */
+  .t-python { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .t-spark  { background: #fff7ed; border-color: #f97316; color: #9a3412; }
+  .t-branch { background: #f5f3ff; border-color: #7c3aed; color: #4c1d95; }
+  .t-empty  { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
+  .t-http   { background: #f0fdf4; border-color: #16a34a; color: #14532d; }
+
+  /* Flechas */
+  .arrow-v { display: flex; flex-direction: column; align-items: center; }
+  .arrow-v .line { width: 2px; height: 24px; background: #cbd5e1; }
+  .arrow-v .head {
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid #cbd5e1;
+  }
+  .arrow-h { display: flex; align-items: center; }
+  .arrow-h .line { height: 2px; width: 24px; background: #cbd5e1; }
+  .arrow-h .head {
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid #cbd5e1;
+  }
+
+  /* Parallel row */
+  .parallel-row {
+    display: flex; align-items: flex-start; justify-content: center; gap: 40px;
+    position: relative;
+  }
+  .parallel-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(50% - 120px);
+    right: calc(50% - 120px);
+    height: 2px;
+    background: #cbd5e1;
+  }
+
+  /* Branch label */
+  .branch-label {
+    font-size: 9.5px; color: #7c3aed; font-weight: 600;
+    margin-bottom: 4px; text-align: center;
+  }
+  .skip-label {
+    font-size: 9.5px; color: #64748b; font-weight: 600;
+    margin-bottom: 4px; text-align: center;
+  }
+
+  /* ── TABLA DE TAREAS ── */
+  .tasks-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tasks-table th {
+    background: #f1f5f9; padding: 10px 12px; text-align: left;
+    font-size: 10.5px; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: .05em;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .tasks-table td {
+    padding: 10px 12px; border-bottom: 1px solid #f1f5f9;
+    vertical-align: top; color: #334155;
+  }
+  .tasks-table tr:last-child td { border-bottom: none; }
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 600;
+  }
+
+  /* ── SCHEDULE BOX ── */
+  .schedule-box {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 16px 20px; display: flex; align-items: center; gap: 20px;
+  }
+  .schedule-icon { font-size: 32px; }
+  .schedule-cron {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 20px; font-weight: 700; color: #0f172a;
+  }
+  .schedule-desc { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+  /* ── VARIABLES BOX ── */
+  .vars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .var-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .var-key {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px; font-weight: 700; color: #7c3aed;
+  }
+  .var-desc { font-size: 11px; color: #64748b; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <h1>Apache Airflow — DAG <code>restaurants_etl</code></h1>
+  <p>Orquestación del pipeline ETL · Proyecto 2 · Base de Datos 2 · TEC</p>
+  <div class="badges">
+    <span class="badge badge-blue">6 Tareas</span>
+    <span class="badge badge-green">Diario 2:00 AM</span>
+    <span class="badge badge-purple">LocalExecutor</span>
+    <span class="badge badge-orange">Spark + Hive + ElasticSearch</span>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 1: CONCEPTOS ══ -->
+<div class="section">
+  <div class="section-title">¿Qué es Apache Airflow?</div>
+  <div class="concept-grid">
+    <div class="concept-card" style="border-color:#3b82f6;">
+      <h3 style="color:#3b82f6;">🎯 Airflow es un orquestador</h3>
+      <p>No procesa datos por sí mismo. Es el "director de orquesta" que decide <strong>qué</strong> se ejecuta, <strong>cuándo</strong> y en <strong>qué orden</strong>. Él llama a Spark, a Postgres, al API del Proyecto 1 — pero ellos son los que hacen el trabajo pesado.</p>
+    </div>
+    <div class="concept-card" style="border-color:#16a34a;">
+      <h3 style="color:#16a34a;">📋 Un DAG es el "plan de trabajo"</h3>
+      <p>DAG = Directed Acyclic Graph. Es un archivo Python que describe las tareas y sus dependencias. "Directed" porque las tareas tienen un orden. "Acyclic" porque no hay ciclos — no podés volver a una tarea que ya corrió.</p>
+    </div>
+    <div class="concept-card" style="border-color:#f97316;">
+      <h3 style="color:#f97316;">⚙️ Las Tasks son las unidades de trabajo</h3>
+      <p>Cada bloque del DAG es una tarea con un tipo específico: <strong>PythonOperator</strong> corre código Python, <strong>SparkSubmitOperator</strong> envía un job a Spark, <strong>BranchPythonOperator</strong> decide qué camino tomar.</p>
+    </div>
+    <div class="concept-card" style="border-color:#7c3aed;">
+      <h3 style="color:#7c3aed;">🕐 Schedule = ejecución automática</h3>
+      <p>El DAG está programado con cron <code>0 2 * * *</code>. Esto significa que Airflow lo lanza solo, todos los días a las 2:00 AM, sin que nadie tenga que hacer nada manualmente.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 2: SCHEDULE ══ -->
+<div class="section">
+  <div class="section-title">Programación</div>
+  <div class="schedule-box">
+    <div class="schedule-icon">⏰</div>
+    <div>
+      <div class="schedule-cron">0 2 * * *</div>
+      <div class="schedule-desc">Todos los días a las <strong>2:00 AM</strong> — se asegura que los datos del día anterior ya estén completos antes de procesar.</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;">
+      <div style="font-size:11px;color:#94a3b8;">Configuración adicional</div>
+      <div style="font-size:11px;color:#475569;margin-top:4px;"><strong>retries:</strong> 2 intentos con 5 min de espera</div>
+      <div style="font-size:11px;color:#475569;"><strong>catchup:</strong> false (no re-ejecuta días pasados)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 3: FLUJO DEL DAG ══ -->
+<div class="section">
+  <div class="section-title">Flujo del DAG</div>
+  <div class="dag-flow">
+
+    <!-- T1: verificar_fuentes -->
+    <div class="flow-col">
+      <div class="task-node t-python">
+        <div class="task-type">PythonOperator</div>
+        <div class="task-id">verificar_fuentes</div>
+        <div class="task-desc">Verifica que Postgres del P1 responde</div>
+      </div>
+    </div>
+
+    <div class="arrow-v" style="margin:0 auto;"><div class="line"></div><div class="head"></div></div>
+
+    <!-- T2: cargar_dimensiones -->
+    <div class="flow-col">
+      <div class="task-node t-spark">
+        <div class="task-type">SparkSubmitOperator</div>
+        <div class="task-id">cargar_dimensiones</div>
+        <div class="task-desc">dim_tiempo, dim_usuario, dim_restaurante, dim_producto</div>
+      </div>
+    </div>
+
+    <!-- Split hacia las dos facts -->
+    <div style="display:flex;justify-content:center;height:28px;position:relative;margin:0 auto;width:440px;">
+      <div style="position:absolute;top:0;left:50%;width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;left:calc(25% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;right:calc(25% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;left:25%;right:25%;height:2px;background:#cbd5e1;"></div>
+    </div>
+
+    <!-- T3: paralelas -->
+    <div class="parallel-row" style="padding-top:0;">
+      <div class="flow-col">
+        <div class="task-node t-spark" style="min-width:160px;">
+          <div class="task-type">SparkSubmitOperator</div>
+          <div class="task-id">cargar_fact_items_pedido</div>
+          <div class="task-desc">Lee orders + order_items</div>
+        </div>
+      </div>
+      <div class="flow-col">
+        <div class="task-node t-spark" style="min-width:160px;">
+          <div class="task-type">SparkSubmitOperator</div>
+          <div class="task-id">cargar_fact_reservaciones</div>
+          <div class="task-desc">Lee reservations</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Join hacia verificar_cambios -->
+    <div style="display:flex;justify-content:center;height:28px;position:relative;margin:0 auto;width:440px;">
+      <div style="position:absolute;top:0;left:50%;width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;left:calc(25% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;right:calc(25% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;bottom:0;left:25%;right:25%;height:2px;background:#cbd5e1;"></div>
+    </div>
+    <div class="arrow-v" style="margin:0 auto;"><div class="line" style="height:4px;"></div><div class="head"></div></div>
+
+    <!-- T4: verificar_cambios_productos -->
+    <div class="flow-col">
+      <div class="task-node t-branch">
+        <div class="task-type">BranchPythonOperator</div>
+        <div class="task-id">verificar_cambios_productos</div>
+        <div class="task-desc">Compara hash MD5 del catálogo de productos</div>
+      </div>
+    </div>
+
+    <!-- Branch split -->
+    <div style="display:flex;justify-content:center;height:28px;position:relative;margin:0 auto;width:380px;">
+      <div style="position:absolute;top:0;left:50%;width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;left:calc(20% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;right:calc(20% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;left:20%;right:20%;height:2px;background:#cbd5e1;"></div>
+    </div>
+
+    <!-- T5: branch options -->
+    <div style="display:flex;justify-content:center;gap:60px;">
+      <div class="flow-col">
+        <div class="branch-label">cambió ✓</div>
+        <div class="task-node t-http" style="min-width:160px;">
+          <div class="task-type">PythonOperator</div>
+          <div class="task-id">reindexar_elasticsearch</div>
+          <div class="task-desc">POST /search/reindex al Proyecto 1</div>
+        </div>
+      </div>
+      <div class="flow-col">
+        <div class="skip-label">sin cambios →</div>
+        <div class="task-node t-empty" style="min-width:130px;">
+          <div class="task-type">EmptyOperator</div>
+          <div class="task-id">sin_cambios</div>
+          <div class="task-desc">No hace nada (skip)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Join hacia pipeline_completo -->
+    <div style="display:flex;justify-content:center;height:28px;position:relative;margin:0 auto;width:380px;">
+      <div style="position:absolute;top:0;left:50%;width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;left:calc(20% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;top:0;right:calc(20% - 1px);width:2px;height:100%;background:#cbd5e1;"></div>
+      <div style="position:absolute;bottom:0;left:20%;right:20%;height:2px;background:#cbd5e1;"></div>
+    </div>
+    <div class="arrow-v" style="margin:0 auto;"><div class="line" style="height:4px;"></div><div class="head"></div></div>
+
+    <!-- T6: pipeline_completo -->
+    <div class="flow-col">
+      <div class="task-node t-empty" style="border-color:#16a34a;background:#f0fdf4;color:#14532d;">
+        <div class="task-type">EmptyOperator</div>
+        <div class="task-id">pipeline_completo</div>
+        <div class="task-desc">trigger: NONE_FAILED_MIN_ONE_SUCCESS</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 4: DESCRIPCIÓN DE TAREAS ══ -->
+<div class="section">
+  <div class="section-title">Descripción de cada tarea</div>
+  <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+    <table class="tasks-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Tarea</th>
+          <th>Tipo</th>
+          <th>Qué hace</th>
+          <th>Depende de</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>verificar_fuentes</strong></td>
+          <td><span class="tag" style="background:#eff6ff;color:#3b82f6;">Python</span></td>
+          <td>Hace un <code>SELECT COUNT(*) FROM orders</code> en el Postgres del P1. Si no hay conexión, el DAG falla antes de intentar correr Spark.</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>cargar_dimensiones</strong></td>
+          <td><span class="tag" style="background:#fff7ed;color:#ea580c;">Spark</span></td>
+          <td>Ejecuta <code>spark/jobs/cargar_dimensiones.py</code>. Lee users, restaurants y products del P1, genera llaves surrogate y sobreescribe las 4 tablas de dimensión en Hive.</td>
+          <td>T1</td>
+        </tr>
+        <tr>
+          <td>3a</td>
+          <td><strong>cargar_fact_items_pedido</strong></td>
+          <td><span class="tag" style="background:#fff7ed;color:#ea580c;">Spark</span></td>
+          <td>Ejecuta <code>spark/jobs/cargar_fact_items_pedido.py</code>. Join de orders + order_items con las dims. Escribe <code>fact_items_pedido</code> en Hive.</td>
+          <td>T2</td>
+        </tr>
+        <tr>
+          <td>3b</td>
+          <td><strong>cargar_fact_reservaciones</strong></td>
+          <td><span class="tag" style="background:#fff7ed;color:#ea580c;">Spark</span></td>
+          <td>Ejecuta <code>spark/jobs/cargar_fact_reservaciones.py</code>. Carga reservations del P1 a <code>fact_reservaciones</code> en Hive. Corre en paralelo con T3a.</td>
+          <td>T2</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>verificar_cambios_productos</strong></td>
+          <td><span class="tag" style="background:#f5f3ff;color:#7c3aed;">Branch</span></td>
+          <td>Calcula el hash MD5 del catálogo de productos actual y lo compara con el de la ejecución anterior (guardado en Variable de Airflow). Si cambió → rama reindexar. Si no → rama skip.</td>
+          <td>T3a + T3b</td>
+        </tr>
+        <tr>
+          <td>5a</td>
+          <td><strong>reindexar_elasticsearch</strong></td>
+          <td><span class="tag" style="background:#f0fdf4;color:#16a34a;">Python</span></td>
+          <td>Llama a <code>POST /search/reindex</code> del search-service del Proyecto 1 con el token de admin. Solo corre si el catálogo cambió.</td>
+          <td>T4 (rama "cambió")</td>
+        </tr>
+        <tr>
+          <td>5b</td>
+          <td><strong>sin_cambios</strong></td>
+          <td><span class="tag" style="background:#f8fafc;color:#64748b;">Empty</span></td>
+          <td>No hace nada. Es el placeholder de la rama "sin cambios" del BranchPythonOperator.</td>
+          <td>T4 (rama "igual")</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>pipeline_completo</strong></td>
+          <td><span class="tag" style="background:#f0fdf4;color:#16a34a;">Empty</span></td>
+          <td>Marca el fin del pipeline. Usa <code>NONE_FAILED_MIN_ONE_SUCCESS</code> como trigger rule para correr aunque una rama del branch haya sido skipped.</td>
+          <td>T5a o T5b</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 5: VARIABLES Y CONEXIONES ══ -->
+<div class="section">
+  <div class="section-title">Conexiones y Variables requeridas en Airflow UI</div>
+  <div class="vars-grid">
+    <div class="var-card">
+      <div class="var-key">Conn: postgres_proyecto1</div>
+      <div class="var-desc">Conexión tipo Postgres al contenedor <code>re2_postgres:5432</code>, base <code>restaurants</code>. Usada por T1 y T4.</div>
+    </div>
+    <div class="var-card">
+      <div class="var-key">Conn: spark_default</div>
+      <div class="var-desc">Conexión tipo Spark a <code>spark://spark-master:7077</code>. Usada por T2, T3a y T3b.</div>
+    </div>
+    <div class="var-card">
+      <div class="var-key">Var: api_admin_token</div>
+      <div class="var-desc">JWT de usuario admin del Proyecto 1. Necesario para que T5a pueda llamar a <code>POST /search/reindex</code>.</div>
+    </div>
+    <div class="var-card">
+      <div class="var-key">Var: products_catalog_hash</div>
+      <div class="var-desc">Generada automáticamente por T4 en la primera ejecución. Guarda el MD5 del catálogo para comparar en la siguiente corrida.</div>
+    </div>
+  </div>
+  <p style="font-size:11px;color:#94a3b8;margin-top:10px;">
+    Ver instrucciones completas de configuración en <code>airflow/connections.md</code>
+  </p>
+</div>
+
+<div style="text-align:center;font-size:11px;color:#cbd5e1;margin-top:8px;">
+  Proyecto 2 · Base de Datos 2 · TEC · Prof. Kenneth Obando Rodríguez
+</div>
+
+</body>
+</html>
