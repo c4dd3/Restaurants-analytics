@@ -523,10 +523,7 @@ def write_csv_folder(df: DataFrame, path: str) -> None:
 def write_single_csv(df: DataFrame, folder: str, filename: str) -> None:
     os.makedirs(folder, exist_ok=True)
 
-    temp_dir = os.path.join(folder, f"__tmp_{filename.replace('.csv', '')}")
-
-    if os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir, ignore_errors=True)
+    temp_dir = tempfile.mkdtemp(prefix=f"spark-export-{filename.replace('.csv', '')}-", dir="/tmp")
 
     try:
         (
@@ -546,11 +543,17 @@ def write_single_csv(df: DataFrame, folder: str, filename: str) -> None:
             raise RuntimeError(f"Spark no generó archivo part en {temp_dir}")
 
         final_path = os.path.join(folder, filename)
+        temp_final_path = os.path.join(folder, f".{filename}.tmp")
+
+        if os.path.exists(temp_final_path):
+            os.remove(temp_final_path)
+
+        shutil.copyfile(os.path.join(temp_dir, part_files[0]), temp_final_path)
 
         if os.path.exists(final_path):
             os.remove(final_path)
 
-        shutil.move(os.path.join(temp_dir, part_files[0]), final_path)
+        os.replace(temp_final_path, final_path)
 
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
