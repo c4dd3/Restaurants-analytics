@@ -1,0 +1,7 @@
+product_id,name,category,price
+p1,Pizza margarita,pizzas,4500.0
+p2,Pizza pepperoni,pizzas,5200.0
+p3,Hamburguesa clásica,hamburguesas,3900.0
+p4,Papas medianas,acompanamientos,1500.0
+p5,Limonada natural,bebidas,1800.0
+p6,Brownie,postres,1600.0

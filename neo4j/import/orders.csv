@@ -1,0 +1,9 @@
+order_id,user_id,restaurant_id,created_at,status,zone
+o1,u1,r1,2026-04-01 12:15:00,completed,San Pedro
+o2,u2,r1,2026-04-01 12:45:00,completed,Curridabat
+o3,u3,r2,2026-04-03 19:30:00,completed,Escazú
+o4,u4,r2,2026-05-05 20:10:00,cancelled,Heredia
+o5,u5,r3,2026-05-12 13:20:00,completed,Cartago
+o6,u1,r1,2026-05-20 19:05:00,completed,San Pedro
+o7,u2,r1,2026-06-02 12:05:00,completed,Curridabat
+o8,u3,r2,2026-06-03 21:00:00,completed,Escazú
