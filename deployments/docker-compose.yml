@@ -209,7 +209,6 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
       - ../neo4j/import:/var/lib/neo4j/import
-      - ../neo4j/queries:/var/lib/neo4j/queries:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7474"]
       interval: 15s
