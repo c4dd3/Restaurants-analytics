@@ -58,6 +58,11 @@ SPARK_CONF = {
     "spark.sql.warehouse.dir": "/opt/hive/data/warehouse",
     "spark.hadoop.hive.metastore.uris": "thrift://hive-metastore:9083",
     "spark.jars.packages": "org.postgresql:postgresql:42.7.3",
+    # El driver corre dentro del contenedor ra_airflow.
+    # Debe anunciarse con su hostname en ra_net para que los executors
+    # del spark-worker puedan conectarse (re2_net bloquea esas conexiones).
+    "spark.driver.host": "ra_airflow",
+    "spark.driver.bindAddress": "0.0.0.0",
 }
 
 
