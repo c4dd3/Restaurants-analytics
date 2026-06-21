@@ -177,6 +177,7 @@ services:
     volumes:
       - ../airflow/dags:/opt/airflow/dags
       - ../airflow/plugins:/opt/airflow/plugins
+      - ../spark:/opt/spark-apps
       - airflow_logs:/opt/airflow/logs
     ports:
       - "8085:8080"
