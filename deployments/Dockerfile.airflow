@@ -6,11 +6,22 @@
 
 FROM apache/airflow:2.9.3
 
+USER root
+
+# Java es necesario para que spark-submit funcione desde Airflow
+RUN apt-get update -qq && \
+    apt-get install -y -q openjdk-17-jre-headless && \
+    rm -rf /var/lib/apt/lists/* && \
+    ln -sf $(find /usr/lib/jvm -maxdepth 1 -name "java-17*" -type d | head -1) /usr/lib/jvm/java-17
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+# Script de arranque (inicializa la BD y levanta webserver + scheduler)
+COPY --chmod=755 deployments/airflow/entrypoint.sh /opt/airflow/entrypoint.sh
+
+USER airflow
+
 # Instalar providers y dependencias del proyecto
 COPY airflow/requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
-
-# Script de arranque (inicializa la BD y levanta webserver + scheduler)
-USER root
-COPY --chmod=755 deployments/airflow/entrypoint.sh /opt/airflow/entrypoint.sh
-USER airflow
