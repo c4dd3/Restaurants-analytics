@@ -10,8 +10,8 @@ FROM apache/hive:4.0.0
 USER root
 
 # Driver JDBC de PostgreSQL 42.7.3 (compatible con Postgres 16)
-RUN curl -fSL \
+RUN wget -q \
     https://jdbc.postgresql.org/download/postgresql-42.7.3.jar \
-    -o /opt/hive/lib/postgresql-42.7.3.jar
+    -O /opt/hive/lib/postgresql-42.7.3.jar
 
 USER hive
