@@ -105,16 +105,21 @@ services:
   #  Apache Spark — Master
   # --------------------------------------------------------------------------
   spark-master:
-    image: bitnami/spark:3.5
+    image: apache/spark:3.5.1-python3
     container_name: ra_spark_master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.master.Master
+      - --host
+      - spark-master
     environment:
-      SPARK_MODE: master
       SPARK_MASTER_OPTS: "-Dspark.deploy.defaultCores=2"
     volumes:
       - ../spark:/opt/spark-apps
+      - ../neo4j/import:/opt/neo4j-import
       - hive_warehouse:/opt/hive/data/warehouse
-      - ../spark/conf/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
-      - ../spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+      - ../spark/conf/hive-site.xml:/opt/spark/conf/hive-site.xml:ro
+      - ../spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
     ports:
       - "8090:8080"
       - "7077:7077"
@@ -125,20 +130,24 @@ services:
   #  Apache Spark — Worker
   # --------------------------------------------------------------------------
   spark-worker:
-    image: bitnami/spark:3.5
+    image: apache/spark:3.5.1-python3
     container_name: ra_spark_worker
     depends_on:
       - spark-master
-    environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY:-2G}
-      SPARK_WORKER_CORES: ${SPARK_WORKER_CORES:-2}
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - spark://spark-master:7077
+      - --cores
+      - ${SPARK_WORKER_CORES:-2}
+      - --memory
+      - ${SPARK_WORKER_MEMORY:-2G}
     volumes:
       - ../spark:/opt/spark-apps
+      - ../neo4j/import:/opt/neo4j-import
       - hive_warehouse:/opt/hive/data/warehouse
-      - ../spark/conf/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
-      - ../spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+      - ../spark/conf/hive-site.xml:/opt/spark/conf/hive-site.xml:ro
+      - ../spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
     networks: [ra_net, re2_net]
     restart: unless-stopped
 
@@ -189,8 +198,8 @@ services:
     container_name: ra_neo4j
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-Analytics2024!}
-      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
-      NEO4J_dbms_security_procedures_unrestricted: "apoc.*,gds.*"
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
       NEO4J_dbms_memory_heap_initial__size: "512m"
       NEO4J_dbms_memory_heap_max__size: "1G"
     ports:
@@ -200,7 +209,6 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
       - ../neo4j/import:/var/lib/neo4j/import
-      - ../neo4j/queries:/var/lib/neo4j/queries:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7474"]
       interval: 15s
@@ -214,7 +222,7 @@ services:
   #  Metabase — Dashboards de visualización
   # --------------------------------------------------------------------------
   metabase:
-    image: metabase/metabase:v0.50.0
+    image: metabase/metabase:v0.61.x
     container_name: ra_metabase
     depends_on:
       analytics-db:

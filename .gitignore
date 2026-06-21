@@ -35,3 +35,6 @@ dashboards/metabase/exports/*.json.bak
 .idea/
 .vscode/
 *.swp
+# Outputs generados por Spark/Neo4J
+spark/output/
+neo4j/import/*.csv
