@@ -11,5 +11,6 @@ COPY airflow/requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
 
 # Script de arranque (inicializa la BD y levanta webserver + scheduler)
-COPY deployments/airflow/entrypoint.sh /opt/airflow/entrypoint.sh
-RUN chmod +x /opt/airflow/entrypoint.sh
+USER root
+COPY --chmod=755 deployments/airflow/entrypoint.sh /opt/airflow/entrypoint.sh
+USER airflow
