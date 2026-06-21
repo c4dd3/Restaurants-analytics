@@ -1,4 +1,4 @@
-COMPOSE = docker compose -f deployments/docker-compose.yml
+COMPOSE = docker compose -f deployments/docker-compose.yml --env-file .env
 
 # =============================================================================
 # setup: copia .env.example a .env y detecta el nombre real de la red re2.
