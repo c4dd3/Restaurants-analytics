@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitectura del Sistema — Restaurants Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .badges { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge {
+    padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid;
+  }
+
+  .section { margin-bottom: 44px; max-width: 960px; margin-left: auto; margin-right: auto; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #94a3b8; margin-bottom: 16px;
+  }
+
+  /* ── PROYECTO BOX ── */
+  .proyecto-box {
+    border-radius: 12px; border: 2px solid; padding: 20px 24px; margin-bottom: 16px;
+  }
+  .proyecto-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; margin-bottom: 12px;
+  }
+  .servicios-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .servicio {
+    border-radius: 8px; padding: 10px 14px; text-align: center;
+    border: 1px solid; min-width: 110px; flex: 1;
+  }
+  .servicio-icon { font-size: 20px; margin-bottom: 4px; }
+  .servicio-name { font-size: 11px; font-weight: 700; }
+  .servicio-port { font-size: 10px; margin-top: 2px; opacity: .7; }
+  .servicio-desc { font-size: 10px; margin-top: 3px; color: #64748b; }
+
+  /* Colores por proyecto */
+  .p1-box   { background: #f0fdf4; border-color: #86efac; }
+  .p1-label { color: #15803d; }
+  .p1-svc   { background: white; border-color: #bbf7d0; color: #166534; }
+
+  .p2-box   { background: #eff6ff; border-color: #93c5fd; }
+  .p2-label { color: #1d4ed8; }
+
+  /* Colores por tipo de servicio P2 */
+  .svc-orange { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+  .svc-yellow { background: #fefce8; border-color: #fde68a; color: #854d0e; }
+  .svc-blue   { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+  .svc-purple { background: #f5f3ff; border-color: #ddd6fe; color: #4c1d95; }
+  .svc-green  { background: #f0fdf4; border-color: #bbf7d0; color: #14532d; }
+  .svc-slate  { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
+
+  /* ── FLECHA DE CONEXIÓN ── */
+  .network-arrow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; margin: 4px 0; color: #64748b;
+  }
+  .network-line { flex: 1; max-width: 120px; height: 2px; background: #cbd5e1; border-radius: 1px; }
+  .network-label {
+    font-size: 10.5px; font-weight: 600; color: #64748b;
+    background: #f1f5f9; border: 1px solid #e2e8f0;
+    padding: 2px 10px; border-radius: 99px;
+  }
+
+  /* ── TABLA DE SERVICIOS ── */
+  .svc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .svc-table th {
+    background: #f1f5f9; padding: 9px 12px; text-align: left;
+    font-size: 10.5px; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: .05em;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .svc-table td {
+    padding: 9px 12px; border-bottom: 1px solid #f1f5f9;
+    vertical-align: top; color: #334155;
+  }
+  .svc-table tr:last-child td { border-bottom: none; }
+  .port-pill {
+    display: inline-block; padding: 1px 7px; border-radius: 4px;
+    font-size: 10px; font-weight: 600; font-family: monospace;
+    background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+    margin-right: 3px;
+  }
+
+  /* ── FLUJO DE DATOS ── */
+  .data-flow {
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 24px; display: flex; align-items: center;
+    gap: 0; flex-wrap: wrap; justify-content: center;
+  }
+  .flow-step {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; min-width: 90px;
+  }
+  .flow-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .flow-name { font-size: 11px; font-weight: 700; color: #334155; text-align: center; }
+  .flow-sub  { font-size: 10px; color: #94a3b8; text-align: center; }
+  .flow-arr  { font-size: 18px; color: #cbd5e1; padding: 0 8px; flex-shrink: 0; }
+
+  /* ── STACK DE TECNOLOGÍAS ── */
+  .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .tech-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 14px; border-left: 4px solid;
+  }
+  .tech-name { font-size: 13px; font-weight: 700; color: #1e293b; }
+  .tech-version { font-size: 10px; color: #94a3b8; margin-top: 1px; font-family: monospace; }
+  .tech-role { font-size: 11px; color: #64748b; margin-top: 6px; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <h1>Arquitectura del Sistema — Restaurants Analytics</h1>
+  <p>Proyecto 2 · Base de Datos 2 · TEC · Prof. Kenneth Obando</p>
+  <div class="badges">
+    <span class="badge" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0;">Proyecto 1 (fuente)</span>
+    <span class="badge" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;">Stack de Analítica</span>
+    <span class="badge" style="background:#fefce8;color:#854d0e;border-color:#fde68a;">8 Servicios Docker</span>
+    <span class="badge" style="background:#f5f3ff;color:#4c1d95;border-color:#ddd6fe;">2 Redes</span>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 1: FLUJO GENERAL ══ -->
+<div class="section">
+  <div class="section-title">Flujo de datos de principio a fin</div>
+  <div class="data-flow">
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#f0fdf4;">🗄️</div>
+      <div class="flow-name">Proyecto 1</div>
+      <div class="flow-sub">Postgres<br>MongoDB</div>
+    </div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#fff7ed;">⏰</div>
+      <div class="flow-name">Airflow</div>
+      <div class="flow-sub">Orquesta<br>el pipeline</div>
+    </div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#fff7ed;">⚡</div>
+      <div class="flow-name">Spark</div>
+      <div class="flow-sub">Transforma<br>los datos</div>
+    </div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#fefce8;">🏭</div>
+      <div class="flow-name">Hive</div>
+      <div class="flow-sub">Data Warehouse<br>estrella</div>
+    </div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step">
+      <div class="flow-icon" style="background:#f5f3ff;">📊</div>
+      <div class="flow-name">Metabase</div>
+      <div class="flow-sub">Dashboards<br>OLAP</div>
+    </div>
+    <div style="width:100%;display:flex;align-items:center;justify-content:center;margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;gap:16px;">
+      <span style="font-size:10px;color:#94a3b8;">rama paralela →</span>
+      <div class="flow-step">
+        <div class="flow-icon" style="background:#fff7ed;">⚡</div>
+        <div class="flow-name">Spark</div>
+        <div class="flow-sub">Genera CSVs<br>del grafo</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">
+        <div class="flow-icon" style="background:#f0fdf4;">🔗</div>
+        <div class="flow-name">Neo4J</div>
+        <div class="flow-sub">Grafos y<br>rutas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 2: DIAGRAMA POR CAPAS ══ -->
+<div class="section">
+  <div class="section-title">Diagrama de servicios por proyecto y red</div>
+
+  <!-- Proyecto 1 -->
+  <div class="proyecto-box p1-box">
+    <div class="proyecto-label p1-label">🟢 Proyecto 1 — Restaurants-e2 (fuente de datos operacionales)</div>
+    <div class="servicios-row">
+      <div class="servicio p1-svc">
+        <div class="servicio-icon">🐘</div>
+        <div class="servicio-name">Postgres</div>
+        <div class="servicio-port">:5432 (re2_postgres)</div>
+        <div class="servicio-desc">Órdenes, usuarios, restaurantes, productos</div>
+      </div>
+      <div class="servicio p1-svc">
+        <div class="servicio-icon">🍃</div>
+        <div class="servicio-name">MongoDB</div>
+        <div class="servicio-port">:27017 (re2_mongos)</div>
+        <div class="servicio-desc">Reviews y datos no estructurados</div>
+      </div>
+      <div class="servicio p1-svc">
+        <div class="servicio-icon">🔍</div>
+        <div class="servicio-name">ElasticSearch</div>
+        <div class="servicio-port">:9200</div>
+        <div class="servicio-desc">Índice del catálogo de productos</div>
+      </div>
+      <div class="servicio p1-svc">
+        <div class="servicio-icon">🌐</div>
+        <div class="servicio-name">API (Go)</div>
+        <div class="servicio-port">:80 (nginx)</div>
+        <div class="servicio-desc">Backend REST del sistema</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flecha de red -->
+  <div class="network-arrow">
+    <div class="network-line"></div>
+    <div class="network-label">🔌 Red Docker externa: RE2_NETWORK_NAME</div>
+    <div class="network-line"></div>
+  </div>
+
+  <!-- Stack de analítica -->
+  <div class="proyecto-box p2-box">
+    <div class="proyecto-label" style="color:#1d4ed8;">🔵 Proyecto 2 — Restaurants-analytics (stack de analítica)</div>
+
+    <!-- Capa de orquestación -->
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:6px;">ORQUESTACIÓN</div>
+      <div class="servicios-row">
+        <div class="servicio svc-orange">
+          <div class="servicio-icon">⏰</div>
+          <div class="servicio-name">Apache Airflow</div>
+          <div class="servicio-port">:8085</div>
+          <div class="servicio-desc">DAG: restaurants_etl<br>Schedule: 0 2 * * *</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Capa de procesamiento -->
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:6px;">PROCESAMIENTO</div>
+      <div class="servicios-row">
+        <div class="servicio svc-orange">
+          <div class="servicio-icon">⚡</div>
+          <div class="servicio-name">Spark Master</div>
+          <div class="servicio-port">:8090 UI · :7077</div>
+          <div class="servicio-desc">Coordinador de jobs</div>
+        </div>
+        <div class="servicio svc-orange">
+          <div class="servicio-icon">⚡</div>
+          <div class="servicio-name">Spark Worker</div>
+          <div class="servicio-port">—</div>
+          <div class="servicio-desc">Ejecuta transformaciones</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Capa de almacenamiento -->
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:6px;">ALMACENAMIENTO</div>
+      <div class="servicios-row">
+        <div class="servicio svc-yellow">
+          <div class="servicio-icon">🏭</div>
+          <div class="servicio-name">Hive Metastore</div>
+          <div class="servicio-port">:9083 (Thrift)</div>
+          <div class="servicio-desc">Catálogo del DW</div>
+        </div>
+        <div class="servicio svc-yellow">
+          <div class="servicio-icon">🏭</div>
+          <div class="servicio-name">HiveServer2</div>
+          <div class="servicio-port">:10000 · :10002</div>
+          <div class="servicio-desc">Consultas HiveQL / Beeline</div>
+        </div>
+        <div class="servicio svc-slate">
+          <div class="servicio-icon">🐘</div>
+          <div class="servicio-name">analytics-db</div>
+          <div class="servicio-port">:5432 (interno)</div>
+          <div class="servicio-desc">Metastore Hive · Airflow · Metabase</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Capa de visualización y grafos -->
+    <div>
+      <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:6px;">VISUALIZACIÓN Y GRAFOS</div>
+      <div class="servicios-row">
+        <div class="servicio svc-blue">
+          <div class="servicio-icon">📊</div>
+          <div class="servicio-name">Metabase</div>
+          <div class="servicio-port">:3000</div>
+          <div class="servicio-desc">Dashboards OLAP</div>
+        </div>
+        <div class="servicio svc-green">
+          <div class="servicio-icon">🔗</div>
+          <div class="servicio-name">Neo4J</div>
+          <div class="servicio-port">:7474 Browser · :7687 Bolt</div>
+          <div class="servicio-desc">Grafos y análisis de rutas</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 3: TABLA DE SERVICIOS ══ -->
+<div class="section">
+  <div class="section-title">Referencia rápida de servicios</div>
+  <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+    <table class="svc-table">
+      <thead>
+        <tr>
+          <th>Contenedor</th>
+          <th>Puerto(s)</th>
+          <th>Función</th>
+          <th>Credenciales</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ra_airflow</strong></td>
+          <td><span class="port-pill">8085</span></td>
+          <td>Interfaz web de Airflow. Monitoreo de DAGs, logs y conexiones.</td>
+          <td><code>admin / admin</code></td>
+        </tr>
+        <tr>
+          <td><strong>ra_spark_master</strong></td>
+          <td><span class="port-pill">8090</span><span class="port-pill">7077</span></td>
+          <td>UI del cluster Spark. Puerto 7077 para envío de jobs.</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>ra_spark_worker</strong></td>
+          <td>—</td>
+          <td>Ejecuta las tareas distribuidas de Spark.</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>ra_hive_metastore</strong></td>
+          <td><span class="port-pill">9083</span></td>
+          <td>Servicio Thrift que gestiona el catálogo de tablas Hive.</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>ra_hive_server</strong></td>
+          <td><span class="port-pill">10000</span><span class="port-pill">10002</span></td>
+          <td>HiveServer2 para consultas HiveQL. 10002 es la UI web.</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>ra_analytics_db</strong></td>
+          <td><span class="port-pill">5432</span></td>
+          <td>Postgres interno. Aloja hive_metastore, airflow y metabase.</td>
+          <td><code>analytics / analytics</code></td>
+        </tr>
+        <tr>
+          <td><strong>ra_neo4j</strong></td>
+          <td><span class="port-pill">7474</span><span class="port-pill">7687</span></td>
+          <td>Browser web en 7474. Protocolo Bolt en 7687 para drivers.</td>
+          <td><code>neo4j / Analytics2024!</code></td>
+        </tr>
+        <tr>
+          <td><strong>ra_metabase</strong></td>
+          <td><span class="port-pill">3000</span></td>
+          <td>Dashboards de visualización OLAP conectados a Hive.</td>
+          <td><code>admin@restaurants.local / Admin1234!</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 4: STACK TECNOLÓGICO ══ -->
+<div class="section">
+  <div class="section-title">Stack tecnológico</div>
+  <div class="tech-grid">
+    <div class="tech-card" style="border-color:#f97316;">
+      <div class="tech-name">Apache Airflow</div>
+      <div class="tech-version">2.9.3</div>
+      <div class="tech-role">Orquestador del pipeline ETL. Define el orden y la frecuencia de ejecución de cada job.</div>
+    </div>
+    <div class="tech-card" style="border-color:#f97316;">
+      <div class="tech-name">Apache Spark</div>
+      <div class="tech-version">3.5 (bitnami)</div>
+      <div class="tech-role">Motor de procesamiento distribuido. Lee de Postgres, transforma con DataFrames y escribe en Hive.</div>
+    </div>
+    <div class="tech-card" style="border-color:#eab308;">
+      <div class="tech-name">Apache Hive</div>
+      <div class="tech-version">3.x</div>
+      <div class="tech-role">Data Warehouse. Almacena el esquema estrella (dimensiones, hechos y vistas OLAP).</div>
+    </div>
+    <div class="tech-card" style="border-color:#3b82f6;">
+      <div class="tech-name">Metabase</div>
+      <div class="tech-version">v0.61</div>
+      <div class="tech-role">Herramienta de BI. Conecta a HiveServer2 vía SparkSQL para visualizar los dashboards OLAP.</div>
+    </div>
+    <div class="tech-card" style="border-color:#16a34a;">
+      <div class="tech-name">Neo4J</div>
+      <div class="tech-version">5.20</div>
+      <div class="tech-role">Base de datos de grafos. Modela co-compras, usuarios influyentes y rutas de entrega.</div>
+    </div>
+    <div class="tech-card" style="border-color:#64748b;">
+      <div class="tech-name">PostgreSQL</div>
+      <div class="tech-version">16-alpine</div>
+      <div class="tech-role">Base interna del stack. Aloja el metastore de Hive, la metadata de Airflow y de Metabase.</div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;font-size:11px;color:#cbd5e1;margin-top:8px;">
+  Proyecto 2 · Base de Datos 2 · TEC · Prof. Kenneth Obando Rodríguez
+</div>
+
+</body>
+</html>

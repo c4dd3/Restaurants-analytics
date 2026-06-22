@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topología Docker — Restaurants Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .back-link { display: inline-block; margin-bottom: 24px; font-size: 12px; color: #64748b; text-decoration: none; }
+  .back-link:hover { color: #1d4ed8; }
+  .badges { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge { padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; }
+  .badge-slate  { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+
+  .section { max-width: 960px; margin: 0 auto 44px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #94a3b8; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+  }
+
+  .info-box {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 14px 18px; font-size: 12px; color: #1e40af; line-height: 1.6; margin-bottom: 20px;
+  }
+  .info-box strong { font-weight: 700; }
+
+  /* ── NETWORK DIAGRAM ── */
+  .networks-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 640px) { .networks-row { grid-template-columns: 1fr; } }
+
+  .network-box {
+    border-radius: 12px; border: 2px solid; padding: 16px 18px;
+  }
+  .network-box.ra  { background: #eff6ff; border-color: #93c5fd; }
+  .network-box.re2 { background: #f0fdf4; border-color: #86efac; }
+  .network-title {
+    font-size: 13px; font-weight: 800; font-family: monospace; margin-bottom: 4px;
+  }
+  .network-title.ra  { color: #1d4ed8; }
+  .network-title.re2 { color: #15803d; }
+  .network-meta { font-size: 11px; color: #64748b; margin-bottom: 10px; }
+  .network-members { display: flex; flex-direction: column; gap: 4px; }
+  .member {
+    font-size: 11px; font-family: monospace; padding: 4px 10px; border-radius: 6px;
+    border: 1px solid;
+  }
+  .member.p2-only { background: #dbeafe; border-color: #bfdbfe; color: #1e40af; }
+  .member.bridge  { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
+
+  /* ── CONTAINER TABLE ── */
+  .ct { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .ct thead tr { background: #f8fafc; }
+  .ct th {
+    padding: 10px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #94a3b8; text-align: left; border-bottom: 1px solid #e2e8f0;
+  }
+  .ct td { padding: 10px 14px; font-size: 11.5px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  .ct tr:last-child td { border-bottom: none; }
+  .ct tr:hover td { background: #fafbff; }
+
+  .cname { font-family: monospace; font-weight: 700; font-size: 11px; }
+  .cname.p2   { color: #0369a1; }
+  .cname.p1   { color: #15803d; }
+  .image-tag  { font-family: monospace; font-size: 10px; color: #64748b; }
+  .port-pill  {
+    display: inline-block; padding: 1px 7px; border-radius: 4px;
+    font-family: monospace; font-size: 10px; background: #f1f5f9; color: #475569;
+    border: 1px solid #e2e8f0; margin: 1px;
+  }
+  .port-pill.pub { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+
+  .health-pill {
+    display: inline-block; padding: 1px 7px; border-radius: 99px;
+    font-size: 10px; font-weight: 600; border: 1px solid;
+  }
+  .health-yes { background: #dcfce7; color: #15803d; border-color: #86efac; }
+  .health-no  { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+
+  .net-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+  .net-tag-ra  { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10px; background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .net-tag-re2 { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10px; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+  /* ── VOLUME TABLE ── */
+  .vol-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .vol-table th { padding: 10px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; background: #f8fafc; text-align: left; border-bottom: 1px solid #e2e8f0; }
+  .vol-table td { padding: 10px 14px; font-size: 11.5px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  .vol-table tr:last-child td { border-bottom: none; }
+  .vol-name { font-family: monospace; font-weight: 700; color: #7c3aed; font-size: 11px; }
+  .vol-desc { font-size: 11px; color: #64748b; }
+  .vol-users { font-size: 10px; font-family: monospace; color: #64748b; }
+
+  /* ── DEP GRAPH ── */
+  .dep-flow {
+    background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 24px; font-size: 12px; line-height: 2;
+  }
+  .dep-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .dep-node {
+    padding: 4px 12px; border-radius: 8px; font-family: monospace; font-size: 11px; font-weight: 700;
+    border: 1px solid;
+  }
+  .dep-arrow { color: #94a3b8; font-size: 14px; }
+  .dep-note  { font-size: 10px; color: #64748b; font-family: monospace; }
+  .dn-db     { background: #fef9c3; color: #92400e; border-color: #fde68a; }
+  .dn-hive   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .dn-spark  { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+  .dn-air    { background: #f3e8ff; color: #7c3aed; border-color: #e9d5ff; }
+  .dn-neo    { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+  .dn-meta   { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #0f172a; border-radius: 10px; padding: 16px 20px;
+    font-family: monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.7; overflow-x: auto;
+  }
+  .kw   { color: #7dd3fc; }
+  .cm   { color: #475569; }
+  .str  { color: #fcd34d; }
+</style>
+</head>
+<body>
+
+<div style="max-width:960px; margin:0 auto;">
+  <a class="back-link" href="index.html">← Índice de documentación</a>
+</div>
+
+<div class="header">
+  <h1>🐳 Topología Docker</h1>
+  <p>Contenedores, redes, volúmenes y dependencias de arranque del stack de analítica.</p>
+  <div class="badges">
+    <span class="badge badge-slate">8 contenedores P2</span>
+    <span class="badge badge-blue">2 redes</span>
+    <span class="badge badge-slate">5 volúmenes</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     REDES
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Redes Docker</div>
+
+  <div class="info-box">
+    El stack usa <strong>dos redes</strong>. <code>ra_net</code> es interna y creada por este compose. <code>re2_net</code> es <em>externa</em> — la crea el Proyecto 1 y su nombre exacto varía según el entorno (detectado y guardado en <code>.env</code> durante <code>make setup</code>).
+  </div>
+
+  <div class="networks-row">
+    <div class="network-box ra">
+      <div class="network-title ra">ra_net</div>
+      <div class="network-meta">driver: bridge · creada por este compose · nombre fijo</div>
+      <div class="network-members">
+        <div class="member p2-only">ra_analytics_db</div>
+        <div class="member p2-only">ra_hive_metastore</div>
+        <div class="member p2-only">ra_hive_server</div>
+        <div class="member p2-only">ra_spark_master</div>
+        <div class="member p2-only">ra_spark_worker</div>
+        <div class="member p2-only">ra_airflow</div>
+        <div class="member p2-only">ra_neo4j</div>
+        <div class="member p2-only">ra_metabase</div>
+      </div>
+    </div>
+    <div class="network-box re2">
+      <div class="network-title re2">re2_net (externa)</div>
+      <div class="network-meta">external: true · nombre leído de <code>$RE2_NETWORK_NAME</code> en .env</div>
+      <div class="network-members">
+        <div class="member bridge">ra_spark_master ← puente P1↔P2</div>
+        <div class="member bridge">ra_spark_worker ← puente P1↔P2</div>
+        <div class="member bridge">ra_airflow ← puente P1↔P2</div>
+        <div class="member bridge">ra_metabase ← puente P1↔P2</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:14px 18px; font-size:12px;">
+    <strong>¿Por qué los contenedores puente necesitan re2_net?</strong><br><br>
+    Spark y Airflow necesitan conectarse a <code>re2_postgres</code> (host interno del Proyecto 1) para leer las tablas fuente via JDBC.
+    Metabase se conecta a <code>re2_nginx</code> para el reindex de ElasticSearch.
+    Neo4J y Hive solo consumen datos que ya están en Hive, por eso solo están en <code>ra_net</code>.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CONTENEDORES
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Contenedores — Referencia Completa</div>
+
+  <table class="ct">
+    <thead>
+      <tr>
+        <th>Container</th>
+        <th>Imagen / Dockerfile</th>
+        <th>Puertos</th>
+        <th>Redes</th>
+        <th>Health</th>
+        <th>Depends on</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="cname p2">ra_analytics_db</div>
+          <div style="font-size:10px; color:#64748b;">Postgres interno</div>
+        </td>
+        <td class="image-tag">postgres:16-alpine</td>
+        <td><span class="port-pill">5432</span></td>
+        <td><div class="net-tags"><span class="net-tag-ra">ra_net</span></div></td>
+        <td><span class="health-pill health-yes">pg_isready</span></td>
+        <td style="font-size:10px; color:#64748b;">—</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="cname p2">ra_hive_metastore</div>
+          <div style="font-size:10px; color:#64748b;">Hive metastore</div>
+        </td>
+        <td class="image-tag">Dockerfile.hive<br><span style="color:#94a3b8">apache/hive:3.1.3 + JDBC</span></td>
+        <td><span class="port-pill">9083</span></td>
+        <td><div class="net-tags"><span class="net-tag-ra">ra_net</span></div></td>
+        <td><span class="health-pill health-yes">TCP :9083</span></td>
+        <td style="font-size:10px; color:#64748b;">analytics-db (healthy)</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="cname p2">ra_hive_server</div>
+          <div style="font-size:10px; color:#64748b;">HiveServer2 / Beeline</div>
+        </td>
+        <td class="image-tag">Dockerfile.hive<br><span style="color:#94a3b8">apache/hive:3.1.3 + JDBC</span></td>
+        <td>
+          <span class="port-pill pub" title="HiveServer2 JDBC">10000</span>
+          <span class="port-pill pub" title="HiveServer2 Web UI">10002</span>
+        </td>
+        <td><div class="net-tags"><span class="net-tag-ra">ra_net</span></div></td>
+        <td><span class="health-pill health-no">—</span></td>
+        <td style="font-size:10px; color:#64748b;">hive-metastore (healthy)</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="cname p2">ra_spark_master</div>
+          <div style="font-size:10px; color:#64748b;">Spark Master</div>
+        </td>
+        <td class="image-tag">apache/spark:3.5.1-python3</td>
+        <td>
+          <span class="port-pill pub" title="Spark Master Web UI">8090→8080</span>
+          <span class="port-pill pub" title="Spark Submit">7077</span>
+        </td>
+        <td>
+          <div class="net-tags">
+            <span class="net-tag-ra">ra_net</span>
+            <span class="net-tag-re2">re2_net</span>
+          </div>
+        </td>
+        <td><span class="health-pill health-no">—</span></td>
+        <td style="font-size:10px; color:#64748b;">—</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="cname p2">ra_spark_worker</div>
+          <div style="font-size:10px; color:#64748b;">Spark Worker</div>
+        </td>
+        <td class="image-tag">apache/spark:3.5.1-python3</td>
+        <td><span class="port-pill">—</span></td>
+        <td>
+          <div class="net-tags">
+            <span class="net-tag-ra">ra_net</span>
+            <span class="net-tag-re2">re2_net</span>
+          </div>
+        </td>
+        <td><span class="health-pill health-no">—</span></td>
+        <td style="font-size:10px; color:#64748b;">spark-master</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="cname p2">ra_airflow</div>
+          <div style="font-size:10px; color:#64748b;">Webserver + Scheduler</div>
+        </td>
+        <td class="image-tag">Dockerfile.airflow<br><span style="color:#94a3b8">apache/airflow:2.9 + providers + JDBC jar</span></td>
+        <td><span class="port-pill pub" title="Airflow UI">8085→8080</span></td>
+        <td>
+          <div class="net-tags">
+            <span class="net-tag-ra">ra_net</span>
+            <span class="net-tag-re2">re2_net</span>
+          </div>
+        </td>
+        <td><span class="health-pill health-yes">GET /health</span></td>
+        <td style="font-size:10px; color:#64748b;">analytics-db (healthy)</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="cname p2">ra_neo4j</div>
+          <div style="font-size:10px; color:#64748b;">Neo4J + APOC</div>
+        </td>
+        <td class="image-tag">neo4j:5.20</td>
+        <td>
+          <span class="port-pill pub" title="Neo4J Browser">7474</span>
+          <span class="port-pill pub" title="Bolt protocol">7687</span>
+        </td>
+        <td><div class="net-tags"><span class="net-tag-ra">ra_net</span></div></td>
+        <td><span class="health-pill health-yes">GET :7474</span></td>
+        <td style="font-size:10px; color:#64748b;">—</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="cname p2">ra_metabase</div>
+          <div style="font-size:10px; color:#64748b;">Dashboards</div>
+        </td>
+        <td class="image-tag">metabase/metabase:v0.61.x</td>
+        <td><span class="port-pill pub" title="Metabase UI">3000</span></td>
+        <td>
+          <div class="net-tags">
+            <span class="net-tag-ra">ra_net</span>
+            <span class="net-tag-re2">re2_net</span>
+          </div>
+        </td>
+        <td><span class="health-pill health-yes">GET /api/health</span></td>
+        <td style="font-size:10px; color:#64748b;">analytics-db (healthy)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VOLÚMENES
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Volúmenes Docker</div>
+
+  <table class="vol-table">
+    <thead>
+      <tr><th>Volumen</th><th>Contenido</th><th>Usado por</th><th>Notas</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="vol-name">analytics_db_data</td>
+        <td class="vol-desc">Datos de Postgres: metastore de Hive, tablas de Airflow y Metabase</td>
+        <td class="vol-users">ra_analytics_db</td>
+        <td style="font-size:11px; color:#64748b;">Se pierde con <code>down -v</code></td>
+      </tr>
+      <tr>
+        <td class="vol-name">hive_warehouse</td>
+        <td class="vol-desc">Archivos ORC del Data Warehouse (<code>/opt/hive/data/warehouse</code>)</td>
+        <td class="vol-users">ra_hive_metastore · ra_hive_server · ra_spark_master · ra_spark_worker · ra_airflow</td>
+        <td style="font-size:11px; color:#64748b;">Compartido entre Hive y Spark para leer/escribir tablas ORC</td>
+      </tr>
+      <tr>
+        <td class="vol-name">airflow_logs</td>
+        <td class="vol-desc">Logs de ejecución de tareas del DAG</td>
+        <td class="vol-users">ra_airflow</td>
+        <td style="font-size:11px; color:#64748b;">Accesibles en la UI de Airflow (Task Instance → Logs)</td>
+      </tr>
+      <tr>
+        <td class="vol-name">neo4j_data</td>
+        <td class="vol-desc">Base de datos del grafo Neo4J</td>
+        <td class="vol-users">ra_neo4j</td>
+        <td style="font-size:11px; color:#64748b;">Se pierde con <code>down -v</code> — requiere recargar el grafo</td>
+      </tr>
+      <tr>
+        <td class="vol-name">neo4j_logs</td>
+        <td class="vol-desc">Logs de Neo4J</td>
+        <td class="vol-users">ra_neo4j</td>
+        <td style="font-size:11px; color:#64748b;">Solo diagnóstico</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DEPENDENCIAS DE ARRANQUE
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Orden de Arranque y Dependencias</div>
+
+  <div class="dep-flow">
+    <div style="font-size:11px; color:#94a3b8; margin-bottom:16px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;">Cadena de dependencias (simplificada)</div>
+
+    <div class="dep-row">
+      <div class="dep-node dn-db">analytics-db</div>
+      <span class="dep-arrow">──→</span>
+      <div class="dep-node dn-hive">hive-metastore</div>
+      <span class="dep-arrow">──→</span>
+      <div class="dep-node dn-hive">hive-server</div>
+      <span class="dep-note">(espera metastore:healthy)</span>
+    </div>
+
+    <div class="dep-row" style="margin-top:8px;">
+      <div class="dep-node dn-db">analytics-db</div>
+      <span class="dep-arrow">──→</span>
+      <div class="dep-node dn-air">airflow</div>
+      <span class="dep-note">(espera analytics-db:healthy, luego reinicia para crear DBs)</span>
+    </div>
+
+    <div class="dep-row" style="margin-top:8px;">
+      <div class="dep-node dn-db">analytics-db</div>
+      <span class="dep-arrow">──→</span>
+      <div class="dep-node dn-meta">metabase</div>
+      <span class="dep-note">(espera analytics-db:healthy)</span>
+    </div>
+
+    <div class="dep-row" style="margin-top:8px;">
+      <div class="dep-node dn-spark">spark-master</div>
+      <span class="dep-arrow">──→</span>
+      <div class="dep-node dn-spark">spark-worker</div>
+      <span class="dep-note">(se registra con el master)</span>
+    </div>
+
+    <div class="dep-row" style="margin-top:8px;">
+      <div class="dep-node dn-neo">neo4j</div>
+      <span class="dep-note">(independiente — arranca en paralelo)</span>
+    </div>
+
+    <div style="margin-top:20px; font-size:11px; color:#64748b; background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0;">
+      <strong>Nota importante:</strong> analytics-db arranca con <code>POSTGRES_DB=hive_metastore</code>.
+      Las bases <code>airflow</code> y <code>metabase</code> no se crean automáticamente — el <code>make setup</code>
+      las crea explícitamente con <code>psql -c "CREATE DATABASE airflow"</code> y luego reinicia el contenedor de Airflow.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     IMÁGENES CUSTOM
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Imágenes Custom (Dockerfiles)</div>
+
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+      <div style="padding:14px 18px; background:#eff6ff; border-bottom:1px solid #e2e8f0;">
+        <div style="font-family:monospace; font-weight:700; color:#1d4ed8;">deployments/Dockerfile.hive</div>
+        <div style="font-size:11px; color:#64748b; margin-top:3px;">Base: <code>apache/hive:3.1.3</code> — agrega driver JDBC de PostgreSQL</div>
+      </div>
+      <div class="code-block" style="border-radius:0; margin:0; padding:14px 18px;">
+<span class="cm"># Descarga el JDBC de PostgreSQL en el classpath de Hive</span>
+RUN curl -fsSL https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.3/postgresql-42.7.3.jar \
+    -o /opt/hive/lib/postgresql-42.7.3.jar</div>
+    </div>
+
+    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+      <div style="padding:14px 18px; background:#fdf4ff; border-bottom:1px solid #e2e8f0;">
+        <div style="font-family:monospace; font-weight:700; color:#7c3aed;">deployments/Dockerfile.airflow</div>
+        <div style="font-size:11px; color:#64748b; margin-top:3px;">Base: <code>apache/airflow:2.9</code> — agrega providers y JDBC para Spark</div>
+      </div>
+      <div class="code-block" style="border-radius:0; margin:0; padding:14px 18px;">
+<span class="cm"># Providers de Airflow: Spark, Postgres</span>
+RUN pip install apache-airflow-providers-apache-spark \
+                apache-airflow-providers-postgres
+
+<span class="cm"># JDBC pre-descargado — evita fallas de Ivy/Maven en runtime</span>
+RUN mkdir -p /opt/airflow/jars && \
+    curl -fsSL .../postgresql-42.7.3.jar \
+         -o /opt/airflow/jars/postgresql-42.7.3.jar</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     COMANDOS DE VERIFICACIÓN
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Comandos de Verificación</div>
+
+  <div class="code-block">
+<span class="cm"># Ver todos los contenedores del stack P2</span>
+docker compose -f deployments/docker-compose.yml --env-file .env ps
+
+<span class="cm"># Ver redes y verificar re2_net existe</span>
+docker network ls | grep re2
+
+<span class="cm"># Ver volúmenes creados</span>
+docker volume ls | grep ra_
+
+<span class="cm"># Logs de un servicio específico</span>
+docker compose -f deployments/docker-compose.yml --env-file .env logs -f airflow
+
+<span class="cm"># Verificar que analytics-db tiene las 3 bases</span>
+docker exec ra_analytics_db psql -U analytics -d hive_metastore -c <span class="str">"\l"</span>
+
+<span class="cm"># Verificar que el warehouse Hive tiene datos</span>
+docker exec ra_hive_server beeline -u <span class="str">"jdbc:hive2://localhost:10000"</span> \
+  -n root --silent=true \
+  -e <span class="str">"SELECT COUNT(*) FROM restaurants_dw.fact_items_pedido;"</span> 2>&amp;1 | grep -v SLF4J
+  </div>
+</div>
+
+</body>
+</html>

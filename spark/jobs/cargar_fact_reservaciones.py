@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 from pyspark.sql import SparkSession
@@ -54,6 +55,13 @@ def read_pg(spark: SparkSession, table: str):
 
 def main() -> None:
     spark = build_spark()
+
+    # Limpiar tabla y directorio residual de ejecuciones previas fallidas
+    spark.sql(f"DROP TABLE IF EXISTS {HIVE_DB}.fact_reservaciones")
+    table_dir = f"/opt/hive/data/warehouse/{HIVE_DB}.db/fact_reservaciones"
+    if os.path.exists(table_dir):
+        shutil.rmtree(table_dir, ignore_errors=True)
+        print(f"[INFO] Directorio limpiado: {table_dir}")
 
     try:
         print("[INFO] Leyendo reservations de Postgres...")

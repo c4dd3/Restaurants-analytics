@@ -4,6 +4,7 @@
 
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *.pyo
 .pytest_cache/
@@ -16,25 +17,26 @@ venv/
 
 # Spark
 spark/logs/
+spark/output/
+spark/tmp/
 *.log
 
 # Airflow
 airflow/logs/
-airflow/plugins/__pycache__/
 
 # Neo4J
 neo4j/data/
+neo4j/import/*.csv
 
 # Metabase
+dashboards/metabase/exports/*.json
 dashboards/metabase/exports/*.json.bak
 
 # macOS
 .DS_Store
+**/.DS_Store
 
 # IDEs
 .idea/
 .vscode/
 *.swp
-# Outputs generados por Spark/Neo4J
-spark/output/
-neo4j/import/*.csv

@@ -1,8 +1,1 @@
 courier_id,stop_order,from_location_id,to_location_id,distance_from_previous_km,estimated_minutes
-courier-1,1,loc-central,loc-o1,3.221,7.73
-courier-1,2,loc-o1,loc-o6,0.0,0.0
-courier-1,3,loc-o6,loc-o3,9.964,23.91
-courier-1,4,loc-o3,loc-o8,0.0,0.0
-courier-2,1,loc-central,loc-o2,5.287,12.69
-courier-2,2,loc-o2,loc-o7,0.0,0.0
-courier-2,3,loc-o7,loc-o5,13.832,33.2

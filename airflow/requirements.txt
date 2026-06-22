@@ -11,5 +11,5 @@ apache-airflow-providers-postgres==5.10.2
 psycopg2-binary==2.9.9
 pymongo==4.6.1
 
-# PySpark (versión debe coincidir con la imagen bitnami/spark:3.5)
-pyspark==3.5.0
+# PySpark (versión debe coincidir con la imagen apache/spark:3.5.1)
+pyspark==3.5.1

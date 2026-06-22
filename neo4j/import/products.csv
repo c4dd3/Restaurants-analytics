@@ -1,7 +1,161 @@
 product_id,name,category,price
-p1,Pizza margarita,pizzas,4500.0
-p2,Pizza pepperoni,pizzas,5200.0
-p3,Hamburguesa clásica,hamburguesas,3900.0
-p4,Papas medianas,acompanamientos,1500.0
-p5,Limonada natural,bebidas,1800.0
-p6,Brownie,postres,1600.0
+48a2cf9a-3972-403e-820a-eb53561efe9c,Casado de pollo,plato fuerte,4500.0
+97e887ea-3438-4fb3-8655-112cfca59eae,Casado de carne,plato fuerte,5500.0
+fd6f89ea-21fe-4613-aad7-0654c4cb29d6,Gallo pinto,plato fuerte,2800.0
+40964798-dc67-4f86-9376-524bb586285e,Refresco de cas,bebida,1200.0
+155ff11a-d9ad-4ece-917a-b28acaaf4977,Fresco de mora,bebida,1200.0
+05d415bb-5be9-4837-988f-efaeef62eb68,Flan de coco,postre,1800.0
+4eafcc9e-7464-495c-992f-ee76ba34be82,Tres leches,postre,2000.0
+b7bd00cc-fa4a-42a7-bcfe-c9ccf006e339,Chifrijo,entrada,3500.0
+3820c7cf-17aa-4aa5-a83f-2fb3a0d7d9a7,Casado de pollo,plato fuerte,4500.0
+ba38ea38-996c-4fed-a70a-e4ffabb41769,Casado de carne,plato fuerte,5500.0
+5b569efe-81ed-40a1-84de-1e1e2f634d59,Gallo pinto,plato fuerte,2800.0
+51bf32da-8f8f-49d4-874e-c113ca81b666,Refresco de cas,bebida,1200.0
+58d39576-fee9-4da7-9739-0471e5177242,Fresco de mora,bebida,1200.0
+60a06dd5-afe5-4c33-a52d-d8fa8ed8fd11,Flan de coco,postre,1800.0
+671bf24d-a7a5-4faa-a8c6-b9548f7de32a,Tres leches,postre,2000.0
+40e250d7-18f7-4a79-9b86-9558b817ab31,Chifrijo,entrada,3500.0
+250fa34a-1f3e-4a1d-84f2-ec0399bc2286,Casado de pollo,plato fuerte,4500.0
+54d6a4af-8501-47a9-a03f-d3a7df0c9497,Casado de carne,plato fuerte,5500.0
+7f15b2da-243f-4fef-b40f-5f7949065a94,Gallo pinto,plato fuerte,2800.0
+25e434fe-e492-45d3-bb85-46dfcf6dc8c1,Refresco de cas,bebida,1200.0
+f10c556a-cb81-47bd-9f34-4dbafee5558a,Fresco de mora,bebida,1200.0
+9eace8ac-9710-492d-84e6-2fbf10543fb3,Flan de coco,postre,1800.0
+576c9211-27a4-4dd0-ba2e-89e1fd9026b9,Tres leches,postre,2000.0
+c4bf2299-57bf-4f51-a0fb-056cafbb9605,Chifrijo,entrada,3500.0
+4e98abe1-6474-4c27-9f6d-cc0b25c1fc81,Casado de pollo,plato fuerte,4500.0
+a1c1e68d-4030-4a89-97ef-3edc7bdf642d,Casado de carne,plato fuerte,5500.0
+8935209e-4165-417c-9260-fcab158f0e16,Gallo pinto,plato fuerte,2800.0
+1af97230-54e7-43eb-b61a-96418d435785,Refresco de cas,bebida,1200.0
+26c1a4bc-4340-4b88-9a93-f39732f1389f,Fresco de mora,bebida,1200.0
+508459e9-6d36-4744-831e-6b256632c67f,Flan de coco,postre,1800.0
+d80c9d9d-82a9-4f60-ba44-72f6888fe71d,Tres leches,postre,2000.0
+316b4e26-5f02-4818-9533-43b48ddb6ab8,Chifrijo,entrada,3500.0
+1dc79486-4c5e-4c36-8dc3-d2eeca3edec1,Ceviche de corvina,entrada,4800.0
+72ec5ed2-1d66-48a4-93a8-3e873182f0c6,Filete de tilapia,plato fuerte,6500.0
+c190abf6-b6ea-462b-a3ab-c05b981f011a,Arroz con camarones,plato fuerte,7500.0
+e6eaf9d2-a0b6-4813-956d-bd3a9b85baa3,Limonada natural,bebida,1500.0
+de6fd0c8-7904-43a6-a5fe-2f45e501a1d1,Café chorreado,bebida,1000.0
+0a0a39fd-8f2b-4422-b361-96b10d3ec821,Churros con chocolate,postre,2500.0
+2d94a485-2d2b-4fbe-beb8-de292afc333e,Empanadas de chiverre,postre,1500.0
+0703c6bf-b432-4089-96b4-946802b43d7c,Patacones con guacamole,entrada,3000.0
+80554a46-2cde-4764-8f66-ca77e32ff901,Ceviche de corvina,entrada,4800.0
+bf05184a-7e56-44e1-9ef2-184a93167040,Filete de tilapia,plato fuerte,6500.0
+fa49ef89-82f0-4ea1-a6ab-e1f5be21d54a,Arroz con camarones,plato fuerte,7500.0
+949f3ed7-77aa-454e-8fb0-b9c679c7e0c1,Limonada natural,bebida,1500.0
+09975f20-dde2-40a1-933e-7a5bdc1c7162,Café chorreado,bebida,1000.0
+be94bbef-656e-493d-8e2e-0689bfa17704,Churros con chocolate,postre,2500.0
+c93b64e4-d0b4-41e7-be11-cf639ab56285,Empanadas de chiverre,postre,1500.0
+6c3c3c73-d669-49fe-a71c-7cb2d141b791,Patacones con guacamole,entrada,3000.0
+9657c76e-46c9-4a95-8b4d-1dbea912ab7b,Ceviche de corvina,entrada,4800.0
+f6f734d7-fbf1-4730-b264-d3cf71cb7ef7,Filete de tilapia,plato fuerte,6500.0
+caafd64b-d893-44ad-8625-0fe320135ffe,Arroz con camarones,plato fuerte,7500.0
+06e165f4-693c-4bdc-8609-263f96fefb76,Limonada natural,bebida,1500.0
+ae01ff1c-1953-4b89-9672-bacc8fad84a3,Café chorreado,bebida,1000.0
+a7299a2b-1a49-4cab-a07d-8dca54ab82dd,Churros con chocolate,postre,2500.0
+400e0fa6-0a4e-470d-a84c-250987d57143,Empanadas de chiverre,postre,1500.0
+222e4e9d-ccba-4aec-90b1-e6597949c067,Patacones con guacamole,entrada,3000.0
+c87fd2d0-8bcc-45bc-82f3-753eb895d197,Casado de pollo,plato fuerte,4500.0
+f3185610-ed62-41a8-a24d-d90d5e1c08af,Casado de carne,plato fuerte,5500.0
+05de16d0-3722-412d-9888-863d2079a7d1,Gallo pinto,plato fuerte,2800.0
+96e54996-512c-4582-99c8-56cbf8559437,Refresco de cas,bebida,1200.0
+4c663283-05f8-4aaf-9523-ea04ae342b88,Fresco de mora,bebida,1200.0
+bdde9ae7-c75e-4daf-865a-1e333f70ead8,Flan de coco,postre,1800.0
+7ca84e0e-d328-4e35-bb3c-c4581f6443b5,Tres leches,postre,2000.0
+26c7b789-2ebc-4a3a-9228-84964168ca40,Chifrijo,entrada,3500.0
+ae87df09-e7e3-44d2-b289-b4ecc7fc44ca,Casado de pollo,plato fuerte,4500.0
+874542ca-05c4-4b3e-b873-7690865bbba1,Casado de carne,plato fuerte,5500.0
+aaa41bd2-3ba3-4818-a21e-98ab5c3d5f24,Gallo pinto,plato fuerte,2800.0
+4169cab9-bda5-42db-be93-13e0469f7a39,Refresco de cas,bebida,1200.0
+abda5de1-2f79-4379-b99c-fe5073bef015,Fresco de mora,bebida,1200.0
+0819e268-cebe-4009-ac6c-3702a21e840d,Flan de coco,postre,1800.0
+4dc517c8-5b49-4d4d-aea6-e08f958fa667,Tres leches,postre,2000.0
+b44e35aa-5c78-4776-a322-5f27f52ecd4a,Chifrijo,entrada,3500.0
+fa4ec0a7-62e7-4006-bd9a-f8f9f268404d,Ceviche de corvina,entrada,4800.0
+cf58f46d-2c6c-4f72-aa72-dedc4ed90427,Filete de tilapia,plato fuerte,6500.0
+73cd3b19-5252-4b26-ad47-0cb5dae8bd5a,Arroz con camarones,plato fuerte,7500.0
+bf41a671-8f7f-45ae-8cbd-1276c67df830,Limonada natural,bebida,1500.0
+cd1b2f42-74a3-4c92-88b7-386f5e485180,Café chorreado,bebida,1000.0
+702d3b70-31be-4ab4-be0b-5bfdb0e06a81,Churros con chocolate,postre,2500.0
+a0467815-dd65-42a4-aabd-5e2fa2fc7170,Empanadas de chiverre,postre,1500.0
+fcd858e5-fef3-4eea-be26-3d79b3aa874e,Patacones con guacamole,entrada,3000.0
+35a27de3-4502-441b-9156-a1809dd80e75,Casado de pollo,plato fuerte,4500.0
+59fd01af-13b0-4b32-83d9-3c07bb863d3c,Casado de carne,plato fuerte,5500.0
+5eae5399-2e03-48f5-bd89-dfc7f0e06ee9,Gallo pinto,plato fuerte,2800.0
+5db5d8dc-2937-4af3-8af0-dfe0cd1b2e59,Refresco de cas,bebida,1200.0
+4b935d06-fd0f-46c8-859d-003c4f0ebe1e,Fresco de mora,bebida,1200.0
+3b3cdd13-0ca1-45b1-b2ea-250a27961158,Flan de coco,postre,1800.0
+0aee1fc9-08d3-44d7-a744-5c7cce52af3a,Tres leches,postre,2000.0
+e34b159c-7af0-4cbc-9707-4944c33d097f,Chifrijo,entrada,3500.0
+c74df855-a9e7-4cee-9209-4511c0140215,Casado de pollo,plato fuerte,4500.0
+8d5d5e49-b224-442d-985c-a5171ec49194,Casado de carne,plato fuerte,5500.0
+73e4d991-ccbb-45b7-9ccf-b9576e288058,Gallo pinto,plato fuerte,2800.0
+2a60ef6f-8b1d-414f-9f91-7a6809496556,Refresco de cas,bebida,1200.0
+7fb8fd5f-f555-49c7-a924-445ebafa6409,Fresco de mora,bebida,1200.0
+6211e669-46b1-4664-9609-ed2126386fc8,Flan de coco,postre,1800.0
+d0cdb886-e09a-4ce5-ba9e-1ed901b11b9b,Tres leches,postre,2000.0
+8f4ed475-fde6-40c6-898f-24fb2b45dc34,Chifrijo,entrada,3500.0
+eea8c1b4-3e1a-40a4-9588-a80409c0e2d3,Casado de pollo,plato fuerte,4500.0
+06b98506-7007-4f5d-96c6-a3c302a5271f,Casado de carne,plato fuerte,5500.0
+826d5638-db90-4574-9d13-1d2d04bfc8f9,Gallo pinto,plato fuerte,2800.0
+3a09354f-85e4-4502-93e0-d2a9cd2ede40,Refresco de cas,bebida,1200.0
+bce07ba1-d0bd-4267-9581-0f76ededfc1b,Fresco de mora,bebida,1200.0
+cc187ba9-c132-437d-ba5a-f79f1c24e3a2,Flan de coco,postre,1800.0
+acdc742d-0725-4fc0-80d8-3fe4ae4b8809,Tres leches,postre,2000.0
+eb9e7382-7cd0-4770-87b5-aa6734005dca,Chifrijo,entrada,3500.0
+b023f6d3-3c79-4770-9163-0a5f989ceca2,Ceviche de corvina,entrada,4800.0
+4aae2996-345c-409c-817e-385e3e5ef851,Filete de tilapia,plato fuerte,6500.0
+e5c48168-cb61-44f5-80c7-c6c669521801,Arroz con camarones,plato fuerte,7500.0
+bf75155b-4759-4d26-9208-e02442bf7f95,Limonada natural,bebida,1500.0
+0c28eca7-fe5c-4e40-9473-67ec21269899,Café chorreado,bebida,1000.0
+46861885-a555-46b9-82fa-23ab703e788f,Churros con chocolate,postre,2500.0
+c69d42b7-647e-42d7-b9f1-3aeb057c100e,Empanadas de chiverre,postre,1500.0
+e82f0737-3d57-431f-9ca4-15638b6efdae,Patacones con guacamole,entrada,3000.0
+95706816-c9be-4823-a561-c92f695f42d1,Casado de pollo,plato fuerte,4500.0
+072e5709-963c-424d-b90e-9080fa84612f,Casado de carne,plato fuerte,5500.0
+5803dba1-6776-48aa-ac23-83df0f9e3c22,Gallo pinto,plato fuerte,2800.0
+dec5f73a-1033-4090-ae59-bc7c41693f39,Refresco de cas,bebida,1200.0
+d726a958-4188-4e43-8c55-586c842169df,Fresco de mora,bebida,1200.0
+192b23f4-b4b8-4add-994b-3b34df9566a3,Flan de coco,postre,1800.0
+5e7c000e-c8ff-4107-8787-6405b886d8ee,Tres leches,postre,2000.0
+11b3ab1d-9895-419c-b3f0-f9fcf4ecc292,Chifrijo,entrada,3500.0
+10b8b640-80fc-408a-b0d2-e239ba571da1,Casado de pollo,plato fuerte,4500.0
+b9b58292-6ba4-4594-84d7-16b66a917d04,Casado de carne,plato fuerte,5500.0
+cf7f2acf-86fd-40dc-853e-ee40aef3e529,Gallo pinto,plato fuerte,2800.0
+3f0008e8-c459-4d7e-a184-5c762a7560de,Refresco de cas,bebida,1200.0
+946cc1b7-a2db-45ad-8e97-ebdb6f5c8760,Fresco de mora,bebida,1200.0
+56df1db8-2e13-4dcd-9d48-17a4d1bb7853,Flan de coco,postre,1800.0
+e03e87ea-477c-44e1-a669-61a1d7417b2f,Tres leches,postre,2000.0
+80dc8314-5c56-4ab5-8a0e-f11e1f517cad,Chifrijo,entrada,3500.0
+6d298345-2353-4e4b-92a2-14a0af3e6f95,Casado de pollo,plato fuerte,4500.0
+f575dda4-0768-46d9-9f77-c5eaefb03254,Casado de carne,plato fuerte,5500.0
+793a564e-2a61-44a6-a8e1-16e44c1a72dd,Gallo pinto,plato fuerte,2800.0
+b23f27f7-b379-4a23-8af7-5803a6fce3fe,Refresco de cas,bebida,1200.0
+031a231b-aa30-4210-b775-1eb6012f727e,Fresco de mora,bebida,1200.0
+1007692a-5042-4ead-9b55-e2f80ac14895,Flan de coco,postre,1800.0
+61898d54-1360-4640-a213-c4504f236500,Tres leches,postre,2000.0
+abea3324-dc7a-426a-9440-5a37e365ea7d,Chifrijo,entrada,3500.0
+6bf06b4d-7caa-4f4a-8db7-71b9b3b016cf,Ceviche de corvina,entrada,4800.0
+9c4f97de-9c1e-4233-a799-77c0d8eaabb5,Filete de tilapia,plato fuerte,6500.0
+eb2bd070-65df-4100-b27e-68e8b3fc76e2,Arroz con camarones,plato fuerte,7500.0
+ac14f41c-ca0d-4b89-9aa3-73892090ff79,Limonada natural,bebida,1500.0
+0659a48b-b157-4542-b2ec-f3b6c1a754bd,Café chorreado,bebida,1000.0
+27d01f61-f3d0-49da-8994-6c9d203f0ab0,Churros con chocolate,postre,2500.0
+b87c352a-125b-4278-bd33-0188a39db590,Empanadas de chiverre,postre,1500.0
+1cbe25af-f01f-4781-8c78-71507ede04e6,Patacones con guacamole,entrada,3000.0
+7e6ee917-ecab-45a5-b850-a57d6c962e3d,Ceviche de corvina,entrada,4800.0
+500f5151-5cd8-4ae7-bffc-5ba27a814472,Filete de tilapia,plato fuerte,6500.0
+3d180bf3-c5c9-49d0-8808-29c13745f4b2,Arroz con camarones,plato fuerte,7500.0
+e0bcaef6-4241-41f0-ac50-8a63653e9245,Limonada natural,bebida,1500.0
+3fbd73d7-dec0-40f5-9675-137a5092218f,Café chorreado,bebida,1000.0
+2330b074-bc91-4fbd-81f6-cf6fb4636985,Churros con chocolate,postre,2500.0
+92d4e42a-e51e-44dd-86e8-a6a7199b993a,Empanadas de chiverre,postre,1500.0
+22f0afc7-9ce7-4525-85fc-89be6fd0411c,Patacones con guacamole,entrada,3000.0
+4f7fadea-981e-4209-88eb-2e971fd9b2e7,Casado de pollo,plato fuerte,4500.0
+a778c90d-f48e-40ae-a2b2-605b39f2f3e2,Casado de carne,plato fuerte,5500.0
+44e82565-d277-4fb1-a294-72dd9840e7d2,Gallo pinto,plato fuerte,2800.0
+6ef7ec41-6d18-4ff1-884e-b28827ca8926,Refresco de cas,bebida,1200.0
+19c53459-d8f1-4a7b-9c6d-7d2acb46be92,Fresco de mora,bebida,1200.0
+df72eca9-33d2-4e29-bf4e-235d7a15bbd4,Flan de coco,postre,1800.0
+e43e38d0-2092-424a-b0a4-46497fcf0ec1,Tres leches,postre,2000.0
+0fc6bf5a-9ae8-4497-94cf-7a86b8593b9e,Chifrijo,entrada,3500.0

@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 from pyspark.sql import SparkSession
@@ -37,16 +38,36 @@ JDBC_PROPS  = {
 
 HIVE_DB = "restaurants_dw"
 
-# Meses y días en español
-MESES = {
-    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
-    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
-}
-DIAS = {
-    1: "Lunes", 2: "Martes", 3: "Miércoles", 4: "Jueves",
-    5: "Viernes", 6: "Sábado", 7: "Domingo",
-}
+# Expresiones nativas Spark para nombres de mes y día (evitan Python UDFs
+# y el consiguiente PYTHON_VERSION_MISMATCH entre driver 3.12 y worker 3.8).
+def _nombre_mes_col(mes_col):
+    return (
+        F.when(mes_col == 1,  "Enero")
+        .when(mes_col == 2,  "Febrero")
+        .when(mes_col == 3,  "Marzo")
+        .when(mes_col == 4,  "Abril")
+        .when(mes_col == 5,  "Mayo")
+        .when(mes_col == 6,  "Junio")
+        .when(mes_col == 7,  "Julio")
+        .when(mes_col == 8,  "Agosto")
+        .when(mes_col == 9,  "Septiembre")
+        .when(mes_col == 10, "Octubre")
+        .when(mes_col == 11, "Noviembre")
+        .when(mes_col == 12, "Diciembre")
+        .otherwise("")
+    )
+
+def _nombre_dia_col(dia_col):
+    return (
+        F.when(dia_col == 1, "Lunes")
+        .when(dia_col == 2, "Martes")
+        .when(dia_col == 3, "Miércoles")
+        .when(dia_col == 4, "Jueves")
+        .when(dia_col == 5, "Viernes")
+        .when(dia_col == 6, "Sábado")
+        .when(dia_col == 7, "Domingo")
+        .otherwise("")
+    )
 
 
 def build_spark() -> SparkSession:
@@ -81,9 +102,6 @@ def cargar_dim_tiempo(spark: SparkSession) -> None:
 
     timestamps = ts_orders.union(ts_reserv).dropna().distinct()
 
-    nombre_mes_udf = F.udf(lambda m: MESES.get(m, ""), "string")
-    nombre_dia_udf = F.udf(lambda d: DIAS.get(d, ""), "string")
-
     dim = (
         timestamps
         .withColumn("fecha",       F.to_date("ts"))
@@ -98,8 +116,8 @@ def cargar_dim_tiempo(spark: SparkSession) -> None:
         .withColumn("tiempo_key",
             (F.year("ts") * 1000000 + F.month("ts") * 10000 +
              F.dayofmonth("ts") * 100 + F.hour("ts")).cast("bigint"))
-        .withColumn("nombre_mes",  nombre_mes_udf(F.col("mes")))
-        .withColumn("nombre_dia",  nombre_dia_udf(F.col("dia_semana")))
+        .withColumn("nombre_mes",  _nombre_mes_col(F.col("mes")))
+        .withColumn("nombre_dia",  _nombre_dia_col(F.col("dia_semana")))
         .withColumn("es_fin_semana",
             F.col("dia_semana").isin([1, 7]))   # 1=Dom, 7=Sáb en Spark
         .select("tiempo_key", "fecha", "anio", "trimestre", "mes",
@@ -208,9 +226,23 @@ def cargar_dim_producto(spark: SparkSession) -> None:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def _drop_table_and_dir(spark: SparkSession, table: str) -> None:
+    """Elimina la tabla del metastore y cualquier directorio residual en el warehouse."""
+    spark.sql(f"DROP TABLE IF EXISTS {table}")
+    _, tbl = table.split(".")
+    table_dir = f"/opt/hive/data/warehouse/{HIVE_DB}.db/{tbl}"
+    if os.path.exists(table_dir):
+        shutil.rmtree(table_dir, ignore_errors=True)
+        print(f"[INFO] Directorio limpiado: {table_dir}")
+
+
 def main() -> None:
     spark = build_spark()
     spark.sql(f"CREATE DATABASE IF NOT EXISTS {HIVE_DB}")
+
+    # Limpiar tablas y directorios residuales de ejecuciones previas fallidas
+    for tbl in ["dim_tiempo", "dim_usuario", "dim_restaurante", "dim_producto"]:
+        _drop_table_and_dir(spark, f"{HIVE_DB}.{tbl}")
 
     try:
         cargar_dim_tiempo(spark)

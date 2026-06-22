@@ -107,6 +107,7 @@ services:
   spark-master:
     image: apache/spark:3.5.1-python3
     container_name: ra_spark_master
+    user: root
     command:
       - /opt/spark/bin/spark-class
       - org.apache.spark.deploy.master.Master
@@ -132,6 +133,7 @@ services:
   spark-worker:
     image: apache/spark:3.5.1-python3
     container_name: ra_spark_worker
+    user: root
     depends_on:
       - spark-master
     command:
@@ -160,6 +162,8 @@ services:
       context: ..
       dockerfile: deployments/Dockerfile.airflow
     container_name: ra_airflow
+    hostname: ra-airflow
+    user: root
     depends_on:
       analytics-db:
         condition: service_healthy
@@ -179,6 +183,7 @@ services:
       - ../airflow/plugins:/opt/airflow/plugins
       - ../spark:/opt/spark-apps
       - airflow_logs:/opt/airflow/logs
+      - hive_warehouse:/opt/hive/data/warehouse
     ports:
       - "8085:8080"
     entrypoint: ["/bin/bash", "/opt/airflow/entrypoint.sh"]

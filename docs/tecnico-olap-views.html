@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Referencia OLAP Views — Restaurants Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .back-link { display: inline-block; margin-bottom: 24px; font-size: 12px; color: #64748b; text-decoration: none; }
+  .back-link:hover { color: #1d4ed8; }
+  .badges { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge { padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; }
+  .badge-teal   { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+  .badge-purple { background: #f3e8ff; color: #7c3aed; border-color: #e9d5ff; }
+  .badge-slate  { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+
+  .section { max-width: 900px; margin: 0 auto 44px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #94a3b8; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+  }
+
+  /* ── VIEW CARD ── */
+  .view-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .view-header {
+    padding: 16px 20px;
+    background: #f0fdf4;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .view-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #15803d;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .view-name { font-size: 14px; font-weight: 700; font-family: monospace; color: #065f46; }
+  .view-desc { font-size: 12px; color: #64748b; margin-top: 3px; }
+  .view-tags { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag {
+    font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: 99px; border: 1px solid;
+  }
+  .tag-teal   { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+  .tag-purple { background: #f3e8ff; color: #7c3aed; border-color: #e9d5ff; }
+  .tag-blue   { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+  .tag-orange { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+  .tag-slate  { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+
+  /* ── COLUMNS GRID ── */
+  .cols-grid {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .cols-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; margin-bottom: 10px; }
+  .cols-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .col-pill {
+    padding: 3px 10px; border-radius: 99px; font-size: 11px; font-family: monospace;
+    background: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a;
+  }
+  .col-pill.agg  { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .col-pill.win  { background: #f3e8ff; border-color: #e9d5ff; color: #7c3aed; }
+  .col-pill.dim  { background: #f0fdf4; border-color: #bbf7d0; color: #065f46; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #0f172a;
+    padding: 18px 20px;
+    font-family: monospace;
+    font-size: 11.5px;
+    color: #e2e8f0;
+    line-height: 1.75;
+    overflow-x: auto;
+  }
+  .kw   { color: #7dd3fc; }
+  .fn   { color: #c084fc; }
+  .str  { color: #fcd34d; }
+  .cm   { color: #475569; }
+  .num  { color: #86efac; }
+  .win-fn { color: #f9a8d4; }
+
+  /* ── WINDOW FUNCTION EXPLAINER ── */
+  .wf-explainer {
+    padding: 14px 20px;
+    background: #fdf4ff;
+    border-top: 1px solid #e9d5ff;
+    font-size: 12px;
+    color: #6b21a8;
+    line-height: 1.6;
+  }
+  .wf-explainer strong { font-weight: 700; }
+  .wf-explainer code { background: #f3e8ff; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+  /* ── TABLES USED ── */
+  .tables-used {
+    padding: 10px 20px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    font-size: 11px;
+    color: #64748b;
+    display: flex; gap: 20px;
+  }
+  .tables-used span { font-family: monospace; color: #0369a1; font-weight: 600; }
+
+  /* ── SUMMARY TABLE ── */
+  .summary-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .summary-table th {
+    padding: 10px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #94a3b8; background: #f8fafc; text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .summary-table td {
+    padding: 10px 16px; font-size: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: #fafbff; }
+  .view-link { font-family: monospace; color: #0369a1; text-decoration: none; font-size: 11.5px; }
+  .view-link:hover { text-decoration: underline; }
+
+  .info-box {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 14px 18px; font-size: 12px; color: #1e40af; line-height: 1.6; margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div style="max-width:900px; margin:0 auto;">
+  <a class="back-link" href="index.html">← Índice de documentación</a>
+</div>
+
+<div class="header">
+  <h1>📊 Referencia OLAP — Vistas SQL</h1>
+  <p>Las 6 vistas OLAP del esquema <code>restaurants_dw</code>, con SQL completo y explicación de window functions.</p>
+  <div class="badges">
+    <span class="badge badge-teal">6 vistas</span>
+    <span class="badge badge-purple">Window Functions</span>
+    <span class="badge badge-slate">Metabase + Beeline</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     RESUMEN
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Resumen de Vistas</div>
+
+  <div class="info-box">
+    Todas las vistas son <strong>CREATE OR REPLACE VIEW</strong> — no almacenan datos, consultan las tablas ORC en tiempo real.<br>
+    Se usan en los dashboards de <strong>Metabase</strong> (conexión vía SparkSQL / HiveServer2) y también en análisis ad-hoc con <strong>Beeline</strong>.
+  </div>
+
+  <table class="summary-table">
+    <thead>
+      <tr><th>#</th><th>Vista</th><th>Tablas base</th><th>Dashboard objetivo</th><th>Técnica</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><a class="view-link" href="#v1">olap_ingresos_por_mes_categoria</a></td>
+        <td>fact_items_pedido, dim_tiempo, dim_producto</td>
+        <td>Ingresos por mes y categoría</td>
+        <td>GROUP BY, SUM, AVG</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><a class="view-link" href="#v2">olap_actividad_usuarios_por_restaurante</a></td>
+        <td>fact_items_pedido, dim_tiempo, dim_restaurante</td>
+        <td>Actividad de clientes por zona</td>
+        <td>COUNT DISTINCT</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><a class="view-link" href="#v3">olap_estado_pedidos</a></td>
+        <td>fact_items_pedido, dim_tiempo</td>
+        <td>Pedidos completados vs cancelados</td>
+        <td><strong>SUM() OVER PARTITION</strong></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><a class="view-link" href="#v4">olap_tendencias_consumo</a></td>
+        <td>fact_items_pedido, dim_tiempo, dim_producto</td>
+        <td>Tendencias de consumo por mes</td>
+        <td><strong>RANK() OVER PARTITION</strong></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><a class="view-link" href="#v5">olap_horarios_pico</a></td>
+        <td>fact_items_pedido, dim_tiempo</td>
+        <td>Horas con mayor volumen</td>
+        <td>GROUP BY hora, nombre_dia</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><a class="view-link" href="#v6">olap_crecimiento_mensual</a></td>
+        <td>fact_items_pedido, dim_tiempo</td>
+        <td>Crecimiento MoM de ingresos</td>
+        <td><strong>LAG() OVER ORDER BY</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VISTA 1
+════════════════════════════════════════════════ -->
+<div class="section" id="v1">
+  <div class="section-title">Vista 1 — ingresos_por_mes_categoria</div>
+  <div class="view-card">
+    <div class="view-header">
+      <div class="view-num">1</div>
+      <div>
+        <div class="view-name">olap_ingresos_por_mes_categoria</div>
+        <div class="view-desc">Ingresos, unidades y ticket promedio agregados por mes y categoría de producto. Filtra solo pedidos <code>confirmed</code>.</div>
+        <div class="view-tags">
+          <span class="tag tag-teal">GROUP BY</span>
+          <span class="tag tag-blue">SUM · COUNT · AVG</span>
+          <span class="tag tag-slate">Dashboard: Ventas</span>
+        </div>
+      </div>
+    </div>
+    <div class="cols-grid">
+      <div class="cols-title">Columnas de salida</div>
+      <div class="cols-list">
+        <span class="col-pill dim">anio</span>
+        <span class="col-pill dim">mes</span>
+        <span class="col-pill dim">nombre_mes</span>
+        <span class="col-pill dim">categoria</span>
+        <span class="col-pill agg">total_pedidos</span>
+        <span class="col-pill agg">unidades_vendidas</span>
+        <span class="col-pill agg">ingresos_totales</span>
+        <span class="col-pill agg">ticket_promedio</span>
+      </div>
+    </div>
+    <div class="code-block"><span class="kw">CREATE OR REPLACE VIEW</span> olap_ingresos_por_mes_categoria <span class="kw">AS</span>
+<span class="kw">SELECT</span>
+  t.anio,
+  t.mes,
+  t.nombre_mes,
+  p.categoria,
+  <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.pedido_id)         <span class="kw">AS</span> total_pedidos,
+  <span class="fn">SUM</span>(f.cantidad)                     <span class="kw">AS</span> unidades_vendidas,
+  <span class="fn">ROUND</span>(<span class="fn">SUM</span>(f.monto_total), <span class="num">2</span>)        <span class="kw">AS</span> ingresos_totales,
+  <span class="fn">ROUND</span>(<span class="fn">AVG</span>(f.monto_total), <span class="num">2</span>)        <span class="kw">AS</span> ticket_promedio
+<span class="kw">FROM</span> fact_items_pedido f
+<span class="kw">JOIN</span> dim_tiempo      t <span class="kw">ON</span> f.tiempo_key      = t.tiempo_key
+<span class="kw">JOIN</span> dim_producto    p <span class="kw">ON</span> f.producto_key    = p.producto_key
+<span class="kw">WHERE</span> f.estado_pedido = <span class="str">'confirmed'</span>
+<span class="kw">GROUP BY</span> t.anio, t.mes, t.nombre_mes, p.categoria;</div>
+    <div class="tables-used">
+      Tablas: <span>fact_items_pedido</span> <span>dim_tiempo</span> <span>dim_producto</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VISTA 2
+════════════════════════════════════════════════ -->
+<div class="section" id="v2">
+  <div class="section-title">Vista 2 — actividad_usuarios_por_restaurante</div>
+  <div class="view-card">
+    <div class="view-header">
+      <div class="view-num">2</div>
+      <div>
+        <div class="view-name">olap_actividad_usuarios_por_restaurante</div>
+        <div class="view-desc">Usuarios únicos, pedidos e ingresos por restaurante y mes. El restaurante actúa como proxy de zona geográfica.</div>
+        <div class="view-tags">
+          <span class="tag tag-teal">COUNT DISTINCT</span>
+          <span class="tag tag-slate">Dashboard: Operaciones</span>
+        </div>
+      </div>
+    </div>
+    <div class="cols-grid">
+      <div class="cols-title">Columnas de salida</div>
+      <div class="cols-list">
+        <span class="col-pill dim">restaurante</span>
+        <span class="col-pill dim">zona</span>
+        <span class="col-pill dim">anio</span>
+        <span class="col-pill dim">mes</span>
+        <span class="col-pill dim">nombre_mes</span>
+        <span class="col-pill agg">usuarios_unicos</span>
+        <span class="col-pill agg">total_pedidos</span>
+        <span class="col-pill agg">ingresos</span>
+      </div>
+    </div>
+    <div class="code-block"><span class="kw">CREATE OR REPLACE VIEW</span> olap_actividad_usuarios_por_restaurante <span class="kw">AS</span>
+<span class="kw">SELECT</span>
+  r.nombre            <span class="kw">AS</span> restaurante,
+  r.direccion         <span class="kw">AS</span> zona,
+  t.anio,
+  t.mes,
+  t.nombre_mes,
+  <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.usuario_key)           <span class="kw">AS</span> usuarios_unicos,
+  <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.pedido_id)             <span class="kw">AS</span> total_pedidos,
+  <span class="fn">ROUND</span>(<span class="fn">SUM</span>(f.monto_total), <span class="num">2</span>)            <span class="kw">AS</span> ingresos
+<span class="kw">FROM</span> fact_items_pedido f
+<span class="kw">JOIN</span> dim_tiempo       t <span class="kw">ON</span> f.tiempo_key      = t.tiempo_key
+<span class="kw">JOIN</span> dim_restaurante  r <span class="kw">ON</span> f.restaurante_key = r.restaurante_key
+<span class="kw">WHERE</span> f.estado_pedido = <span class="str">'confirmed'</span>
+<span class="kw">GROUP BY</span> r.nombre, r.direccion, t.anio, t.mes, t.nombre_mes;</div>
+    <div class="tables-used">
+      Tablas: <span>fact_items_pedido</span> <span>dim_tiempo</span> <span>dim_restaurante</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VISTA 3
+════════════════════════════════════════════════ -->
+<div class="section" id="v3">
+  <div class="section-title">Vista 3 — estado_pedidos</div>
+  <div class="view-card">
+    <div class="view-header">
+      <div class="view-num">3</div>
+      <div>
+        <div class="view-name">olap_estado_pedidos</div>
+        <div class="view-desc">Distribución de pedidos por estado (pending / confirmed / cancelled) con porcentaje relativo dentro del mismo mes.</div>
+        <div class="view-tags">
+          <span class="tag tag-purple">SUM() OVER PARTITION</span>
+          <span class="tag tag-slate">Dashboard: Ventas</span>
+        </div>
+      </div>
+    </div>
+    <div class="cols-grid">
+      <div class="cols-title">Columnas de salida</div>
+      <div class="cols-list">
+        <span class="col-pill dim">anio</span>
+        <span class="col-pill dim">mes</span>
+        <span class="col-pill dim">nombre_mes</span>
+        <span class="col-pill dim">estado_pedido</span>
+        <span class="col-pill agg">total_pedidos</span>
+        <span class="col-pill agg">monto_total</span>
+        <span class="col-pill win">porcentaje</span>
+      </div>
+    </div>
+    <div class="code-block"><span class="kw">CREATE OR REPLACE VIEW</span> olap_estado_pedidos <span class="kw">AS</span>
+<span class="kw">SELECT</span>
+  t.anio,
+  t.mes,
+  t.nombre_mes,
+  f.estado_pedido,
+  <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.pedido_id)       <span class="kw">AS</span> total_pedidos,
+  <span class="fn">ROUND</span>(<span class="fn">SUM</span>(f.monto_total), <span class="num">2</span>)      <span class="kw">AS</span> monto_total,
+  <span class="fn">ROUND</span>(
+    <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.pedido_id) * <span class="num">100.0</span>
+    / <span class="win-fn">SUM</span>(<span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.pedido_id)) <span class="win-fn">OVER</span> (<span class="win-fn">PARTITION BY</span> t.anio, t.mes),
+    <span class="num">2</span>
+  )                                 <span class="kw">AS</span> porcentaje
+<span class="kw">FROM</span> fact_items_pedido f
+<span class="kw">JOIN</span> dim_tiempo t <span class="kw">ON</span> f.tiempo_key = t.tiempo_key
+<span class="kw">GROUP BY</span> t.anio, t.mes, t.nombre_mes, f.estado_pedido;</div>
+    <div class="wf-explainer">
+      <strong>Window function:</strong>
+      <code>SUM(COUNT(DISTINCT pedido_id)) OVER (PARTITION BY anio, mes)</code><br>
+      Calcula el total de pedidos del <em>mismo mes</em> sumando los COUNT ya agrupados por estado.
+      Esto permite dividir cada estado entre el total del mes para obtener el porcentaje sin necesidad de un subquery adicional.
+    </div>
+    <div class="tables-used">
+      Tablas: <span>fact_items_pedido</span> <span>dim_tiempo</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VISTA 4
+════════════════════════════════════════════════ -->
+<div class="section" id="v4">
+  <div class="section-title">Vista 4 — tendencias_consumo</div>
+  <div class="view-card">
+    <div class="view-header">
+      <div class="view-num">4</div>
+      <div>
+        <div class="view-name">olap_tendencias_consumo</div>
+        <div class="view-desc">Ranking de productos por unidades vendidas dentro de cada categoría y mes. Permite identificar el producto #1 de cada categoría.</div>
+        <div class="view-tags">
+          <span class="tag tag-purple">RANK() OVER PARTITION</span>
+          <span class="tag tag-slate">Dashboard: Ventas</span>
+        </div>
+      </div>
+    </div>
+    <div class="cols-grid">
+      <div class="cols-title">Columnas de salida</div>
+      <div class="cols-list">
+        <span class="col-pill dim">anio</span>
+        <span class="col-pill dim">mes</span>
+        <span class="col-pill dim">nombre_mes</span>
+        <span class="col-pill dim">categoria</span>
+        <span class="col-pill dim">producto</span>
+        <span class="col-pill agg">unidades_vendidas</span>
+        <span class="col-pill agg">ingresos</span>
+        <span class="col-pill win">ranking_en_categoria</span>
+      </div>
+    </div>
+    <div class="code-block"><span class="kw">CREATE OR REPLACE VIEW</span> olap_tendencias_consumo <span class="kw">AS</span>
+<span class="kw">SELECT</span>
+  t.anio,
+  t.mes,
+  t.nombre_mes,
+  p.categoria,
+  p.nombre                            <span class="kw">AS</span> producto,
+  <span class="fn">SUM</span>(f.cantidad)                     <span class="kw">AS</span> unidades_vendidas,
+  <span class="fn">ROUND</span>(<span class="fn">SUM</span>(f.monto_total), <span class="num">2</span>)        <span class="kw">AS</span> ingresos,
+  <span class="win-fn">RANK</span>() <span class="win-fn">OVER</span> (
+    <span class="win-fn">PARTITION BY</span> t.anio, t.mes, p.categoria
+    <span class="win-fn">ORDER BY</span> <span class="fn">SUM</span>(f.cantidad) <span class="kw">DESC</span>
+  )                                   <span class="kw">AS</span> ranking_en_categoria
+<span class="kw">FROM</span> fact_items_pedido f
+<span class="kw">JOIN</span> dim_tiempo   t <span class="kw">ON</span> f.tiempo_key   = t.tiempo_key
+<span class="kw">JOIN</span> dim_producto p <span class="kw">ON</span> f.producto_key = p.producto_key
+<span class="kw">WHERE</span> f.estado_pedido = <span class="str">'confirmed'</span>
+<span class="kw">GROUP BY</span> t.anio, t.mes, t.nombre_mes, p.categoria, p.nombre;</div>
+    <div class="wf-explainer">
+      <strong>Window function:</strong>
+      <code>RANK() OVER (PARTITION BY anio, mes, categoria ORDER BY SUM(cantidad) DESC)</code><br>
+      Reinicia el ranking para cada combinación de mes+categoría. El producto más vendido en esa categoría y mes obtiene <code>ranking = 1</code>.
+      A diferencia de <code>ROW_NUMBER()</code>, <code>RANK()</code> asigna el mismo número a empates.
+    </div>
+    <div class="tables-used">
+      Tablas: <span>fact_items_pedido</span> <span>dim_tiempo</span> <span>dim_producto</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VISTA 5
+════════════════════════════════════════════════ -->
+<div class="section" id="v5">
+  <div class="section-title">Vista 5 — horarios_pico</div>
+  <div class="view-card">
+    <div class="view-header">
+      <div class="view-num">5</div>
+      <div>
+        <div class="view-name">olap_horarios_pico</div>
+        <div class="view-desc">Volumen de pedidos, unidades e ingresos por hora del día y día de la semana. Distingue entre días de semana y fin de semana.</div>
+        <div class="view-tags">
+          <span class="tag tag-teal">GROUP BY hora, nombre_dia</span>
+          <span class="tag tag-slate">Dashboard: Operaciones</span>
+        </div>
+      </div>
+    </div>
+    <div class="cols-grid">
+      <div class="cols-title">Columnas de salida</div>
+      <div class="cols-list">
+        <span class="col-pill dim">hora</span>
+        <span class="col-pill dim">nombre_dia</span>
+        <span class="col-pill dim">es_fin_semana</span>
+        <span class="col-pill agg">total_pedidos</span>
+        <span class="col-pill agg">unidades_vendidas</span>
+        <span class="col-pill agg">ingresos</span>
+        <span class="col-pill agg">ticket_promedio</span>
+      </div>
+    </div>
+    <div class="code-block"><span class="kw">CREATE OR REPLACE VIEW</span> olap_horarios_pico <span class="kw">AS</span>
+<span class="kw">SELECT</span>
+  t.hora,
+  t.nombre_dia,
+  t.es_fin_semana,
+  <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.pedido_id)       <span class="kw">AS</span> total_pedidos,
+  <span class="fn">SUM</span>(f.cantidad)                   <span class="kw">AS</span> unidades_vendidas,
+  <span class="fn">ROUND</span>(<span class="fn">SUM</span>(f.monto_total), <span class="num">2</span>)      <span class="kw">AS</span> ingresos,
+  <span class="fn">ROUND</span>(<span class="fn">AVG</span>(f.monto_total), <span class="num">2</span>)      <span class="kw">AS</span> ticket_promedio
+<span class="kw">FROM</span> fact_items_pedido f
+<span class="kw">JOIN</span> dim_tiempo t <span class="kw">ON</span> f.tiempo_key = t.tiempo_key
+<span class="kw">WHERE</span> f.estado_pedido = <span class="str">'confirmed'</span>
+<span class="kw">GROUP BY</span> t.hora, t.nombre_dia, t.es_fin_semana;</div>
+    <div class="tables-used">
+      Tablas: <span>fact_items_pedido</span> <span>dim_tiempo</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VISTA 6
+════════════════════════════════════════════════ -->
+<div class="section" id="v6">
+  <div class="section-title">Vista 6 — crecimiento_mensual</div>
+  <div class="view-card">
+    <div class="view-header">
+      <div class="view-num">6</div>
+      <div>
+        <div class="view-name">olap_crecimiento_mensual</div>
+        <div class="view-desc">Crecimiento Month-over-Month (MoM) de ingresos: compara cada mes con el anterior y calcula el porcentaje de cambio.</div>
+        <div class="view-tags">
+          <span class="tag tag-purple">LAG() OVER ORDER BY</span>
+          <span class="tag tag-blue">Subquery</span>
+          <span class="tag tag-slate">Dashboard: Ventas</span>
+        </div>
+      </div>
+    </div>
+    <div class="cols-grid">
+      <div class="cols-title">Columnas de salida</div>
+      <div class="cols-list">
+        <span class="col-pill dim">anio</span>
+        <span class="col-pill dim">mes</span>
+        <span class="col-pill dim">nombre_mes</span>
+        <span class="col-pill agg">ingresos_mes</span>
+        <span class="col-pill agg">total_pedidos</span>
+        <span class="col-pill win">ingresos_mes_anterior</span>
+        <span class="col-pill win">crecimiento_pct</span>
+      </div>
+    </div>
+    <div class="code-block"><span class="kw">CREATE OR REPLACE VIEW</span> olap_crecimiento_mensual <span class="kw">AS</span>
+<span class="kw">SELECT</span>
+  anio,
+  mes,
+  nombre_mes,
+  ingresos_mes,
+  total_pedidos,
+  <span class="win-fn">LAG</span>(ingresos_mes) <span class="win-fn">OVER</span> (<span class="win-fn">ORDER BY</span> anio, mes)   <span class="kw">AS</span> ingresos_mes_anterior,
+  <span class="fn">ROUND</span>(
+    (ingresos_mes - <span class="win-fn">LAG</span>(ingresos_mes) <span class="win-fn">OVER</span> (<span class="win-fn">ORDER BY</span> anio, mes))
+    / <span class="fn">NULLIF</span>(<span class="win-fn">LAG</span>(ingresos_mes) <span class="win-fn">OVER</span> (<span class="win-fn">ORDER BY</span> anio, mes), <span class="num">0</span>) * <span class="num">100</span>,
+    <span class="num">2</span>
+  )                                              <span class="kw">AS</span> crecimiento_pct
+<span class="kw">FROM</span> (
+  <span class="kw">SELECT</span>
+    t.anio,
+    t.mes,
+    t.nombre_mes,
+    <span class="fn">ROUND</span>(<span class="fn">SUM</span>(f.monto_total), <span class="num">2</span>)       <span class="kw">AS</span> ingresos_mes,
+    <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> f.pedido_id)        <span class="kw">AS</span> total_pedidos
+  <span class="kw">FROM</span> fact_items_pedido f
+  <span class="kw">JOIN</span> dim_tiempo t <span class="kw">ON</span> f.tiempo_key = t.tiempo_key
+  <span class="kw">WHERE</span> f.estado_pedido = <span class="str">'confirmed'</span>
+  <span class="kw">GROUP BY</span> t.anio, t.mes, t.nombre_mes
+) base;</div>
+    <div class="wf-explainer">
+      <strong>Window function:</strong>
+      <code>LAG(ingresos_mes) OVER (ORDER BY anio, mes)</code><br>
+      Devuelve el valor de <code>ingresos_mes</code> de la fila <em>anterior</em> en el orden cronológico (mes anterior).
+      El primer mes retorna <code>NULL</code> (no hay mes anterior).<br><br>
+      <strong>División segura:</strong>
+      <code>NULLIF(..., 0)</code> evita división por cero si el mes anterior tuvo ingresos = 0.
+      El subquery <code>base</code> pre-agrega por mes antes de aplicar la window function, ya que LAG no puede usarse directamente sobre agregaciones.
+    </div>
+    <div class="tables-used">
+      Tablas: <span>fact_items_pedido</span> <span>dim_tiempo</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     EJECUTAR VISTAS
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Cómo ejecutar las vistas</div>
+  <div class="info-box">
+    Las vistas se crean durante el <code>make setup</code>. Para consultarlas manualmente:
+  </div>
+  <div style="background:#0f172a; border-radius:10px; padding:18px 20px; font-family:monospace; font-size:12px; color:#e2e8f0; line-height:1.7; overflow-x:auto;">
+<span style="color:#64748b"># Desde Beeline</span>
+docker exec -it ra_hive_server beeline -u jdbc:hive2://localhost:10000
+
+<span style="color:#7dd3fc">USE</span> restaurants_dw;
+<span style="color:#7dd3fc">SELECT</span> * <span style="color:#7dd3fc">FROM</span> olap_crecimiento_mensual <span style="color:#7dd3fc">ORDER BY</span> anio, mes;
+<span style="color:#7dd3fc">SELECT</span> * <span style="color:#7dd3fc">FROM</span> olap_tendencias_consumo <span style="color:#7dd3fc">WHERE</span> ranking_en_categoria = <span style="color:#86efac">1</span>;
+<span style="color:#7dd3fc">SELECT</span> * <span style="color:#7dd3fc">FROM</span> olap_horarios_pico <span style="color:#7dd3fc">ORDER BY</span> total_pedidos <span style="color:#7dd3fc">DESC LIMIT</span> <span style="color:#86efac">10</span>;
+  </div>
+</div>
+
+</body>
+</html>

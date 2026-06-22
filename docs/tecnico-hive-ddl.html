@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Referencia DDL Hive — Restaurants Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .back-link { display: inline-block; margin-bottom: 24px; font-size: 12px; color: #64748b; text-decoration: none; }
+  .back-link:hover { color: #1d4ed8; }
+  .badges { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge { padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+  .badge-slate  { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+  .badge-teal   { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+
+  .section { max-width: 900px; margin: 0 auto 44px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #94a3b8; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+  }
+
+  /* ── TABLE CARD ── */
+  .table-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .table-card-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .table-card-header.dim   { background: #eff6ff; }
+  .table-card-header.fact  { background: #fff7ed; }
+
+  .table-name { font-size: 15px; font-weight: 700; font-family: monospace; }
+  .table-name.dim  { color: #1d4ed8; }
+  .table-name.fact { color: #c2410c; }
+  .table-comment { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .table-meta { margin-left: auto; text-align: right; }
+  .table-meta span { font-size: 10px; display: block; color: #94a3b8; }
+  .table-meta strong { font-size: 12px; }
+
+  /* ── COLUMN TABLE ── */
+  .col-table { width: 100%; border-collapse: collapse; }
+  .col-table thead tr { background: #f8fafc; }
+  .col-table th {
+    padding: 9px 16px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #94a3b8;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .col-table td {
+    padding: 9px 16px;
+    font-size: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+  .col-table tr:last-child td { border-bottom: none; }
+  .col-table tr:hover td { background: #fafbff; }
+
+  .col-name { font-family: monospace; font-weight: 600; color: #0f172a; }
+  .col-type { font-family: monospace; color: #0369a1; font-size: 11px; }
+  .col-comment { color: #64748b; font-size: 11px; }
+  .col-key {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid;
+  }
+  .key-pk   { background: #fef9c3; color: #a16207; border-color: #fde68a; }
+  .key-fk   { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+  .key-deg  { background: #f3e8ff; color: #7c3aed; border-color: #e9d5ff; }
+  .key-meas { background: #dcfce7; color: #15803d; border-color: #86efac; }
+
+  /* ── STORAGE BANNER ── */
+  .storage-banner {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 10px 20px;
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    color: #64748b;
+  }
+  .storage-banner span { font-family: monospace; color: #0f172a; font-weight: 600; }
+
+  /* ── INFO BOX ── */
+  .info-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: #1e40af;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .info-box strong { font-weight: 700; }
+
+  /* ── KEY LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    font-size: 11px;
+    align-items: center;
+    color: #64748b;
+  }
+  .legend-label { font-weight: 600; color: #94a3b8; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #0f172a;
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #e2e8f0;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+  .kw   { color: #7dd3fc; }   /* keywords */
+  .type-c { color: #86efac; } /* types */
+  .cm   { color: #64748b; }   /* comments */
+  .str  { color: #fcd34d; }   /* strings */
+</style>
+</head>
+<body>
+
+<div style="max-width:900px; margin:0 auto;">
+  <a class="back-link" href="index.html">← Índice de documentación</a>
+</div>
+
+<div class="header">
+  <h1>🗄️ Referencia DDL — Hive Data Warehouse</h1>
+  <p>Definición completa de tablas, columnas, tipos y almacenamiento del esquema <code>restaurants_dw</code>.</p>
+  <div class="badges">
+    <span class="badge badge-blue">Apache Hive 3</span>
+    <span class="badge badge-teal">ORC + SNAPPY</span>
+    <span class="badge badge-slate">4 dimensiones · 2 hechos</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LEYENDA Y CONTEXTO
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Contexto</div>
+
+  <div class="info-box">
+    <strong>Base de datos:</strong> <code>restaurants_dw</code> — creada automáticamente por el script <code>hive/schema/01_dimensions.hql</code>.<br>
+    Todas las tablas usan <strong>ORC con compresión SNAPPY</strong>: formato columnar óptimo para consultas analíticas con alto ratio de compresión.<br>
+    Las <strong>llaves surrogate</strong> son generadas por Spark usando <code>CRC32</code> sobre el UUID del Proyecto 1 (sin dependencia de secuencias en Hive).<br>
+    Los <strong>jobs Spark</strong> escriben en modo <code>overwrite</code> con FileOutputCommitter v2 para evitar conflictos de rename en HDFS local.
+  </div>
+
+  <div class="legend">
+    <span class="legend-label">Leyenda:</span>
+    <span class="col-key key-pk">PK</span> Llave surrogate (generada por Spark)
+    <span class="col-key key-fk">FK</span> Llave foránea a dimensión
+    <span class="col-key key-deg">DEG</span> Atributo degenerado del hecho
+    <span class="col-key key-meas">MED</span> Medida / métrica
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DIMENSIONES
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Tablas de Dimensión</div>
+
+  <!-- dim_tiempo -->
+  <div class="table-card">
+    <div class="table-card-header dim">
+      <div>
+        <div class="table-name dim">dim_tiempo</div>
+        <div class="table-comment">Dimensión de tiempo — generada desde timestamps de orders y reservations</div>
+      </div>
+      <div class="table-meta">
+        <span>Filas estimadas</span>
+        <strong>~8.760 / año</strong>
+      </div>
+    </div>
+    <table class="col-table">
+      <thead>
+        <tr>
+          <th>Columna</th><th>Tipo</th><th>Rol</th><th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">tiempo_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-pk">PK</span></td>
+          <td class="col-comment">Surrogate key — formato <code>YYYYMMDDhh</code> (ej. 2024010214 = 2 jan 2024 14:00)</td>
+        </tr>
+        <tr>
+          <td class="col-name">fecha</td>
+          <td class="col-type">DATE</td>
+          <td></td>
+          <td class="col-comment">Fecha sin hora (YYYY-MM-DD)</td>
+        </tr>
+        <tr>
+          <td class="col-name">anio</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">Año (ej. 2024)</td>
+        </tr>
+        <tr>
+          <td class="col-name">trimestre</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">1 – 4</td>
+        </tr>
+        <tr>
+          <td class="col-name">mes</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">1 – 12</td>
+        </tr>
+        <tr>
+          <td class="col-name">nombre_mes</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">Enero, Febrero … Diciembre (expresión Spark nativa, no UDF)</td>
+        </tr>
+        <tr>
+          <td class="col-name">semana</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">Semana del año (1 – 53, ISO)</td>
+        </tr>
+        <tr>
+          <td class="col-name">dia</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">Día del mes (1 – 31)</td>
+        </tr>
+        <tr>
+          <td class="col-name">dia_semana</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">1 = Lunes … 7 = Domingo</td>
+        </tr>
+        <tr>
+          <td class="col-name">nombre_dia</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">Lunes, Martes … Domingo</td>
+        </tr>
+        <tr>
+          <td class="col-name">hora</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">0 – 23</td>
+        </tr>
+        <tr>
+          <td class="col-name">es_fin_semana</td>
+          <td class="col-type">BOOLEAN</td>
+          <td></td>
+          <td class="col-comment">TRUE si dia_semana ∈ {6, 7}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="storage-banner">
+      Almacenamiento: <span>ORC</span>&nbsp; Compresión: <span>SNAPPY</span>&nbsp; Script: <span>cargar_dimensiones.py → build_dim_tiempo()</span>
+    </div>
+  </div>
+
+  <!-- dim_usuario -->
+  <div class="table-card">
+    <div class="table-card-header dim">
+      <div>
+        <div class="table-name dim">dim_usuario</div>
+        <div class="table-comment">Usuarios del Proyecto 1 — excluye datos sensibles (password, email completo)</div>
+      </div>
+      <div class="table-meta">
+        <span>Fuente</span>
+        <strong>tabla users (P1)</strong>
+      </div>
+    </div>
+    <table class="col-table">
+      <thead>
+        <tr><th>Columna</th><th>Tipo</th><th>Rol</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">usuario_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-pk">PK</span></td>
+          <td class="col-comment"><code>CRC32(usuario_id)</code> — único por UUID</td>
+        </tr>
+        <tr>
+          <td class="col-name">usuario_id</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">UUID original del Proyecto 1 (para trazabilidad)</td>
+        </tr>
+        <tr>
+          <td class="col-name">nombre</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">Nombre completo del usuario</td>
+        </tr>
+        <tr>
+          <td class="col-name">rol</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment"><code>client</code> | <code>admin</code></td>
+        </tr>
+        <tr>
+          <td class="col-name">fecha_registro</td>
+          <td class="col-type">DATE</td>
+          <td></td>
+          <td class="col-comment">Fecha de creación de la cuenta</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="storage-banner">
+      Almacenamiento: <span>ORC</span>&nbsp; Compresión: <span>SNAPPY</span>&nbsp; Script: <span>cargar_dimensiones.py → build_dim_usuario()</span>
+    </div>
+  </div>
+
+  <!-- dim_restaurante -->
+  <div class="table-card">
+    <div class="table-card-header dim">
+      <div>
+        <div class="table-name dim">dim_restaurante</div>
+        <div class="table-comment">Restaurantes registrados en el Proyecto 1</div>
+      </div>
+      <div class="table-meta">
+        <span>Fuente</span>
+        <strong>tabla restaurants (P1)</strong>
+      </div>
+    </div>
+    <table class="col-table">
+      <thead>
+        <tr><th>Columna</th><th>Tipo</th><th>Rol</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">restaurante_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-pk">PK</span></td>
+          <td class="col-comment"><code>CRC32(restaurante_id)</code></td>
+        </tr>
+        <tr>
+          <td class="col-name">restaurante_id</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">UUID original del Proyecto 1</td>
+        </tr>
+        <tr>
+          <td class="col-name">nombre</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">Nombre del restaurante</td>
+        </tr>
+        <tr>
+          <td class="col-name">direccion</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">Dirección física (usada como proxy de zona geográfica)</td>
+        </tr>
+        <tr>
+          <td class="col-name">capacidad</td>
+          <td class="col-type">INT</td>
+          <td></td>
+          <td class="col-comment">Capacidad máxima de comensales</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="storage-banner">
+      Almacenamiento: <span>ORC</span>&nbsp; Compresión: <span>SNAPPY</span>&nbsp; Script: <span>cargar_dimensiones.py → build_dim_restaurante()</span>
+    </div>
+  </div>
+
+  <!-- dim_producto -->
+  <div class="table-card">
+    <div class="table-card-header dim">
+      <div>
+        <div class="table-name dim">dim_producto</div>
+        <div class="table-comment">Productos de menú — precio actual desnormalizado (snapshot al momento del ETL)</div>
+      </div>
+      <div class="table-meta">
+        <span>Fuente</span>
+        <strong>tabla products (P1)</strong>
+      </div>
+    </div>
+    <table class="col-table">
+      <thead>
+        <tr><th>Columna</th><th>Tipo</th><th>Rol</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">producto_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-pk">PK</span></td>
+          <td class="col-comment"><code>CRC32(producto_id)</code></td>
+        </tr>
+        <tr>
+          <td class="col-name">producto_id</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">UUID original del Proyecto 1</td>
+        </tr>
+        <tr>
+          <td class="col-name">nombre</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">Nombre del producto</td>
+        </tr>
+        <tr>
+          <td class="col-name">categoria</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">Categoría del menú (ej. <em>Bebidas</em>, <em>Entradas</em>, <em>Postres</em>)</td>
+        </tr>
+        <tr>
+          <td class="col-name">precio_actual</td>
+          <td class="col-type">DECIMAL(10,2)</td>
+          <td></td>
+          <td class="col-comment">Precio vigente en el momento del ETL (no histórico)</td>
+        </tr>
+        <tr>
+          <td class="col-name">disponible</td>
+          <td class="col-type">BOOLEAN</td>
+          <td></td>
+          <td class="col-comment">Si el producto está activo en el menú</td>
+        </tr>
+        <tr>
+          <td class="col-name">restaurante_id</td>
+          <td class="col-type">STRING</td>
+          <td></td>
+          <td class="col-comment">UUID del restaurante dueño — desnormalizado para joins sin pasar por dim_restaurante</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="storage-banner">
+      Almacenamiento: <span>ORC</span>&nbsp; Compresión: <span>SNAPPY</span>&nbsp; Script: <span>cargar_dimensiones.py → build_dim_producto()</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TABLAS DE HECHOS
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Tablas de Hechos</div>
+
+  <!-- fact_items_pedido -->
+  <div class="table-card">
+    <div class="table-card-header fact">
+      <div>
+        <div class="table-name fact">fact_items_pedido</div>
+        <div class="table-comment">Grano: una fila por ítem dentro de un pedido — tabla de hechos principal</div>
+      </div>
+      <div class="table-meta">
+        <span>Fuente</span>
+        <strong>order_items (P1)</strong>
+      </div>
+    </div>
+    <table class="col-table">
+      <thead>
+        <tr><th>Columna</th><th>Tipo</th><th>Rol</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">tiempo_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-fk">FK</span></td>
+          <td class="col-comment">→ dim_tiempo.tiempo_key (hora del pedido)</td>
+        </tr>
+        <tr>
+          <td class="col-name">usuario_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-fk">FK</span></td>
+          <td class="col-comment">→ dim_usuario.usuario_key</td>
+        </tr>
+        <tr>
+          <td class="col-name">restaurante_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-fk">FK</span></td>
+          <td class="col-comment">→ dim_restaurante.restaurante_key</td>
+        </tr>
+        <tr>
+          <td class="col-name">producto_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-fk">FK</span></td>
+          <td class="col-comment">→ dim_producto.producto_key</td>
+        </tr>
+        <tr>
+          <td class="col-name">pedido_id</td>
+          <td class="col-type">STRING</td>
+          <td><span class="col-key key-deg">DEG</span></td>
+          <td class="col-comment">UUID del order en Proyecto 1 (trazabilidad)</td>
+        </tr>
+        <tr>
+          <td class="col-name">item_id</td>
+          <td class="col-type">STRING</td>
+          <td><span class="col-key key-deg">DEG</span></td>
+          <td class="col-comment">UUID del order_item en Proyecto 1</td>
+        </tr>
+        <tr>
+          <td class="col-name">cantidad</td>
+          <td class="col-type">INT</td>
+          <td><span class="col-key key-meas">MED</span></td>
+          <td class="col-comment">Unidades del producto en el ítem</td>
+        </tr>
+        <tr>
+          <td class="col-name">precio_unitario</td>
+          <td class="col-type">DECIMAL(10,2)</td>
+          <td><span class="col-key key-meas">MED</span></td>
+          <td class="col-comment">Precio al momento del pedido (<em>snapshot</em>, puede diferir de dim_producto.precio_actual)</td>
+        </tr>
+        <tr>
+          <td class="col-name">monto_total</td>
+          <td class="col-type">DECIMAL(10,2)</td>
+          <td><span class="col-key key-meas">MED</span></td>
+          <td class="col-comment"><code>cantidad × precio_unitario</code> — precalculado por Spark</td>
+        </tr>
+        <tr>
+          <td class="col-name">estado_pedido</td>
+          <td class="col-type">STRING</td>
+          <td><span class="col-key key-deg">DEG</span></td>
+          <td class="col-comment"><code>pending</code> | <code>confirmed</code> | <code>cancelled</code></td>
+        </tr>
+        <tr>
+          <td class="col-name">es_para_llevar</td>
+          <td class="col-type">BOOLEAN</td>
+          <td><span class="col-key key-deg">DEG</span></td>
+          <td class="col-comment">TRUE si el pedido es para llevar</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="storage-banner">
+      Almacenamiento: <span>ORC</span>&nbsp; Compresión: <span>SNAPPY</span>&nbsp; Script: <span>cargar_fact_items_pedido.py</span>
+    </div>
+  </div>
+
+  <!-- fact_reservaciones -->
+  <div class="table-card">
+    <div class="table-card-header fact">
+      <div>
+        <div class="table-name fact">fact_reservaciones</div>
+        <div class="table-comment">Grano: una fila por reservación — análisis de ocupación y cancelaciones</div>
+      </div>
+      <div class="table-meta">
+        <span>Fuente</span>
+        <strong>reservations (P1)</strong>
+      </div>
+    </div>
+    <table class="col-table">
+      <thead>
+        <tr><th>Columna</th><th>Tipo</th><th>Rol</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">tiempo_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-fk">FK</span></td>
+          <td class="col-comment">→ dim_tiempo.tiempo_key (fecha de la reserva)</td>
+        </tr>
+        <tr>
+          <td class="col-name">usuario_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-fk">FK</span></td>
+          <td class="col-comment">→ dim_usuario.usuario_key</td>
+        </tr>
+        <tr>
+          <td class="col-name">restaurante_key</td>
+          <td class="col-type">BIGINT</td>
+          <td><span class="col-key key-fk">FK</span></td>
+          <td class="col-comment">→ dim_restaurante.restaurante_key</td>
+        </tr>
+        <tr>
+          <td class="col-name">reservacion_id</td>
+          <td class="col-type">STRING</td>
+          <td><span class="col-key key-deg">DEG</span></td>
+          <td class="col-comment">UUID de la reservación en Proyecto 1</td>
+        </tr>
+        <tr>
+          <td class="col-name">tamano_grupo</td>
+          <td class="col-type">INT</td>
+          <td><span class="col-key key-meas">MED</span></td>
+          <td class="col-comment">Número de personas (<code>party_size</code>)</td>
+        </tr>
+        <tr>
+          <td class="col-name">estado</td>
+          <td class="col-type">STRING</td>
+          <td><span class="col-key key-deg">DEG</span></td>
+          <td class="col-comment"><code>pending</code> | <code>confirmed</code> | <code>cancelled</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="storage-banner">
+      Almacenamiento: <span>ORC</span>&nbsp; Compresión: <span>SNAPPY</span>&nbsp; Script: <span>cargar_fact_reservaciones.py</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DDL COMPLETO
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">DDL Completo — Crear esquema desde cero</div>
+
+  <div class="info-box">
+    Los 3 scripts HQL se ejecutan en orden. El Makefile los aplica via Beeline dentro del contenedor <code>ra_hive_server</code> como parte de <code>make setup</code>.
+  </div>
+
+  <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom:6px;">01_dimensions.hql</div>
+  <div class="code-block"><span class="kw">CREATE DATABASE IF NOT EXISTS</span> restaurants_dw
+  COMMENT <span class="str">'Data Warehouse — Proyecto 2 BD2 TEC'</span>;
+
+<span class="kw">USE</span> restaurants_dw;
+
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> dim_tiempo (
+  tiempo_key      <span class="type-c">BIGINT</span>  COMMENT <span class="str">'Surrogate: YYYYMMDDhh'</span>,
+  fecha           <span class="type-c">DATE</span>,
+  anio            <span class="type-c">INT</span>,
+  trimestre       <span class="type-c">INT</span>,
+  mes             <span class="type-c">INT</span>,
+  nombre_mes      <span class="type-c">STRING</span>,
+  semana          <span class="type-c">INT</span>,
+  dia             <span class="type-c">INT</span>,
+  dia_semana      <span class="type-c">INT</span>     COMMENT <span class="str">'1=Lunes … 7=Domingo'</span>,
+  nombre_dia      <span class="type-c">STRING</span>,
+  hora            <span class="type-c">INT</span>,
+  es_fin_semana   <span class="type-c">BOOLEAN</span>
+)
+<span class="kw">STORED AS ORC</span>
+TBLPROPERTIES (<span class="str">'orc.compress'</span>=<span class="str">'SNAPPY'</span>);
+
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> dim_usuario (
+  usuario_key     <span class="type-c">BIGINT</span>,   usuario_id  <span class="type-c">STRING</span>,
+  nombre          <span class="type-c">STRING</span>,   rol         <span class="type-c">STRING</span>,
+  fecha_registro  <span class="type-c">DATE</span>
+) <span class="kw">STORED AS ORC</span> TBLPROPERTIES (<span class="str">'orc.compress'</span>=<span class="str">'SNAPPY'</span>);
+
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> dim_restaurante (
+  restaurante_key <span class="type-c">BIGINT</span>,   restaurante_id <span class="type-c">STRING</span>,
+  nombre          <span class="type-c">STRING</span>,   direccion      <span class="type-c">STRING</span>,
+  capacidad       <span class="type-c">INT</span>
+) <span class="kw">STORED AS ORC</span> TBLPROPERTIES (<span class="str">'orc.compress'</span>=<span class="str">'SNAPPY'</span>);
+
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> dim_producto (
+  producto_key    <span class="type-c">BIGINT</span>,   producto_id    <span class="type-c">STRING</span>,
+  nombre          <span class="type-c">STRING</span>,   categoria      <span class="type-c">STRING</span>,
+  precio_actual   <span class="type-c">DECIMAL(10,2)</span>,  disponible <span class="type-c">BOOLEAN</span>,
+  restaurante_id  <span class="type-c">STRING</span>
+) <span class="kw">STORED AS ORC</span> TBLPROPERTIES (<span class="str">'orc.compress'</span>=<span class="str">'SNAPPY'</span>);</div>
+
+  <div style="font-size:12px; font-weight:700; color:#475569; margin:18px 0 6px;">02_facts.hql</div>
+  <div class="code-block"><span class="kw">CREATE TABLE IF NOT EXISTS</span> fact_items_pedido (
+  tiempo_key      <span class="type-c">BIGINT</span>,   usuario_key     <span class="type-c">BIGINT</span>,
+  restaurante_key <span class="type-c">BIGINT</span>,   producto_key    <span class="type-c">BIGINT</span>,
+  pedido_id       <span class="type-c">STRING</span>,   item_id         <span class="type-c">STRING</span>,
+  cantidad        <span class="type-c">INT</span>,
+  precio_unitario <span class="type-c">DECIMAL(10,2)</span>,
+  monto_total     <span class="type-c">DECIMAL(10,2)</span>,
+  estado_pedido   <span class="type-c">STRING</span>,   es_para_llevar  <span class="type-c">BOOLEAN</span>
+) <span class="kw">STORED AS ORC</span> TBLPROPERTIES (<span class="str">'orc.compress'</span>=<span class="str">'SNAPPY'</span>);
+
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> fact_reservaciones (
+  tiempo_key      <span class="type-c">BIGINT</span>,   usuario_key     <span class="type-c">BIGINT</span>,
+  restaurante_key <span class="type-c">BIGINT</span>,
+  reservacion_id  <span class="type-c">STRING</span>,
+  tamano_grupo    <span class="type-c">INT</span>,
+  estado          <span class="type-c">STRING</span>
+) <span class="kw">STORED AS ORC</span> TBLPROPERTIES (<span class="str">'orc.compress'</span>=<span class="str">'SNAPPY'</span>);</div>
+
+  <div style="font-size:12px; font-weight:700; color:#475569; margin:18px 0 6px;">Verificar desde Beeline</div>
+  <div class="code-block"><span class="cm">-- Conectarse</span>
+docker exec -it ra_hive_server beeline -u jdbc:hive2://localhost:10000
+
+<span class="cm">-- Listar tablas</span>
+<span class="kw">SHOW DATABASES</span>;
+<span class="kw">USE</span> restaurants_dw;
+<span class="kw">SHOW TABLES</span>;
+
+<span class="cm">-- Contar filas post-ETL</span>
+<span class="kw">SELECT</span> <span class="str">'dim_tiempo'</span>, <span class="kw">COUNT</span>(*) <span class="kw">FROM</span> dim_tiempo
+<span class="kw">UNION ALL SELECT</span> <span class="str">'dim_usuario'</span>, <span class="kw">COUNT</span>(*) <span class="kw">FROM</span> dim_usuario
+<span class="kw">UNION ALL SELECT</span> <span class="str">'fact_items_pedido'</span>, <span class="kw">COUNT</span>(*) <span class="kw">FROM</span> fact_items_pedido;</div>
+</div>
+
+</body>
+</html>

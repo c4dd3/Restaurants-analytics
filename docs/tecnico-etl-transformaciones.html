@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transformaciones ETL — Restaurants Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .back-link { display: inline-block; margin-bottom: 24px; font-size: 12px; color: #64748b; text-decoration: none; }
+  .back-link:hover { color: #1d4ed8; }
+  .badges { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge { padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; }
+  .badge-orange { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+  .badge-teal   { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+
+  .section { max-width: 900px; margin: 0 auto 44px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #94a3b8; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+  }
+
+  .info-box {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 14px 18px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-bottom: 20px;
+  }
+  .warn-box {
+    background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px;
+    padding: 14px 18px; font-size: 12px; color: #92400e; line-height: 1.7; margin-bottom: 20px;
+  }
+  .warn-box strong, .info-box strong { font-weight: 700; }
+
+  /* ── PIPELINE FLOW ── */
+  .pipeline {
+    display: flex; gap: 0; align-items: stretch;
+    background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .pipe-step {
+    flex: 1; padding: 16px 12px; text-align: center;
+    border-right: 1px solid #f1f5f9; position: relative;
+  }
+  .pipe-step:last-child { border-right: none; }
+  .pipe-step::after {
+    content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: 16px; z-index: 1;
+  }
+  .pipe-step:last-child::after { display: none; }
+  .pipe-icon { font-size: 20px; margin-bottom: 6px; }
+  .pipe-label { font-size: 11px; font-weight: 700; color: #0f172a; }
+  .pipe-sub   { font-size: 10px; color: #64748b; margin-top: 2px; }
+  .pipe-step.src  { background: #f0fdf4; }
+  .pipe-step.ext  { background: #fff7ed; }
+  .pipe-step.trx  { background: #fdf4ff; }
+  .pipe-step.load { background: #eff6ff; }
+
+  /* ── JOB CARD ── */
+  .job-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+    overflow: hidden; margin-bottom: 28px;
+  }
+  .job-header {
+    padding: 16px 20px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .job-header.dim  { background: #eff6ff; }
+  .job-header.fact { background: #fff7ed; }
+  .job-header.spark { background: #fdf4ff; }
+  .job-num {
+    width: 30px; height: 30px; border-radius: 8px;
+    font-weight: 800; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .job-num.dim   { background: #dbeafe; color: #1d4ed8; }
+  .job-num.fact  { background: #ffedd5; color: #9a3412; }
+  .job-num.spark { background: #f3e8ff; color: #7c3aed; }
+  .job-file { font-size: 13px; font-weight: 700; font-family: monospace; }
+  .job-file.dim   { color: #0369a1; }
+  .job-file.fact  { color: #c2410c; }
+  .job-file.spark { color: #7c3aed; }
+  .job-desc { font-size: 12px; color: #64748b; margin-top: 3px; }
+
+  .job-body { padding: 0; }
+
+  /* ── TRANSFORM TABLE ── */
+  .tx-table { width: 100%; border-collapse: collapse; }
+  .tx-table th {
+    padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #94a3b8; background: #f8fafc; text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .tx-table td { padding: 10px 16px; font-size: 11.5px; border-bottom: 1px solid #f8fafc; vertical-align: top; }
+  .tx-table tr:last-child td { border-bottom: none; }
+  .tx-table tr:hover td { background: #fafbff; }
+
+  .tx-op {
+    display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 10px; font-weight: 700; border: 1px solid;
+  }
+  .op-read   { background: #dcfce7; color: #15803d; border-color: #86efac; }
+  .op-trx    { background: #f3e8ff; color: #7c3aed; border-color: #e9d5ff; }
+  .op-calc   { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+  .op-join   { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+  .op-write  { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+  .op-filter { background: #fef9c3; color: #a16207; border-color: #fde68a; }
+
+  .tx-desc { color: #374151; }
+  .tx-code { font-family: monospace; font-size: 10.5px; color: #475569; background: #f8fafc; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #0f172a; padding: 16px 20px;
+    font-family: monospace; font-size: 11.5px; color: #e2e8f0; line-height: 1.75; overflow-x: auto;
+  }
+  .kw   { color: #7dd3fc; }
+  .fn   { color: #c084fc; }
+  .str  { color: #fcd34d; }
+  .cm   { color: #475569; }
+  .num  { color: #86efac; }
+
+  /* ── SURROGATE KEY EXPLAINER ── */
+  .sk-box {
+    background: #fdf4ff; border: 1px solid #e9d5ff; border-radius: 10px;
+    padding: 16px 18px; font-size: 12px; color: #581c87; line-height: 1.7;
+  }
+  .sk-box strong { font-weight: 700; }
+  .sk-box code { background: #f3e8ff; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+  /* ── TASK FLOW ── */
+  .task-row {
+    display: flex; align-items: center; gap: 6px; padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9; font-size: 12px;
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-name { font-family: monospace; font-weight: 700; font-size: 11px; min-width: 240px; }
+  .task-op   { font-family: monospace; font-size: 10px; color: #64748b; }
+  .task-box  { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; }
+</style>
+</head>
+<body>
+
+<div style="max-width:900px; margin:0 auto;">
+  <a class="back-link" href="index.html">← Índice de documentación</a>
+</div>
+
+<div class="header">
+  <h1>⚡ Transformaciones ETL — Spark</h1>
+  <p>Detalle de los jobs de Spark: lecturas JDBC, generación de llaves surrogate, joins y escritura en Hive.</p>
+  <div class="badges">
+    <span class="badge badge-orange">Spark 3.5</span>
+    <span class="badge badge-blue">JDBC → Postgres</span>
+    <span class="badge badge-teal">→ Hive ORC</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FLUJO GENERAL
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Flujo General del Pipeline</div>
+
+  <div class="pipeline">
+    <div class="pipe-step src">
+      <div class="pipe-icon">🐘</div>
+      <div class="pipe-label">PostgreSQL P1</div>
+      <div class="pipe-sub">re2_postgres:5432<br>BD: restaurants</div>
+    </div>
+    <div class="pipe-step ext">
+      <div class="pipe-icon">🔌</div>
+      <div class="pipe-label">Lectura JDBC</div>
+      <div class="pipe-sub">Spark DataFrame API<br>Driver: postgresql-42.7.3</div>
+    </div>
+    <div class="pipe-step trx">
+      <div class="pipe-icon">⚙️</div>
+      <div class="pipe-label">Transformaciones</div>
+      <div class="pipe-sub">CRC32 keys · joins<br>casteos · cálculos</div>
+    </div>
+    <div class="pipe-step load">
+      <div class="pipe-icon">🗄️</div>
+      <div class="pipe-label">Escritura Hive</div>
+      <div class="pipe-sub">Mode: overwrite<br>ORC + SNAPPY</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 12px;">
+    <div class="info-box">
+      <strong>Ejecución orquestada por Airflow:</strong> el DAG <code>restaurants_etl</code> ejecuta los 3 jobs Spark
+      en orden —primero dimensiones, luego los dos de hechos en paralelo— usando <code>SparkSubmitOperator</code> con la conexión <code>spark_default</code>.
+      El jar JDBC está pre-instalado en la imagen de Airflow y montado en <code>/opt/airflow/jars/</code>.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LLAVE SURROGATE — EXPLICACIÓN
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Generación de Llaves Surrogate con CRC32</div>
+
+  <div class="sk-box">
+    <strong>¿Por qué CRC32 y no SEQUENCE o autoincrement?</strong><br><br>
+    Hive no tiene secuencias nativas ni autoincrement. El ETL sobreescribe las tablas en cada ejecución
+    (<code>mode="overwrite"</code>), lo que hace inviable una secuencia externa.<br><br>
+    <strong>Solución:</strong> <code>CRC32</code> sobre el UUID del Proyecto 1 genera un entero de 32 bits
+    <em>determinístico</em> — el mismo UUID siempre produce el mismo key. Esto permite que los jobs de
+    hechos resuelvan las FK buscando <code>CRC32(usuario_id)</code> en la dimensión sin necesidad de
+    un lookup adicional.<br><br>
+    <code>usuario_key = F.crc32(F.col("id").cast("string")).cast("bigint")</code><br><br>
+    <strong>Limitación conocida:</strong> CRC32 produce colisiones en espacios muy grandes.
+    Para los volúmenes del proyecto (&lt; 100k registros por dimensión) la probabilidad de colisión es despreciable.
+  </div>
+
+  <div class="code-block" style="margin-top:14px; border-radius:10px;">
+<span class="cm"># Ejemplo: generación de usuario_key en cargar_dimensiones.py</span>
+df_usuarios = spark.read.jdbc(JDBC_URL, <span class="str">"users"</span>, properties=JDBC_PROPS)
+
+dim_usuario = df_usuarios.<span class="fn">select</span>(
+    <span class="fn">F.crc32</span>(<span class="fn">F.col</span>(<span class="str">"id"</span>).<span class="fn">cast</span>(<span class="str">"string"</span>)).<span class="fn">cast</span>(<span class="str">"bigint"</span>).<span class="fn">alias</span>(<span class="str">"usuario_key"</span>),
+    <span class="fn">F.col</span>(<span class="str">"id"</span>).<span class="fn">alias</span>(<span class="str">"usuario_id"</span>),
+    <span class="fn">F.col</span>(<span class="str">"name"</span>).<span class="fn">alias</span>(<span class="str">"nombre"</span>),
+    <span class="fn">F.col</span>(<span class="str">"role"</span>).<span class="fn">alias</span>(<span class="str">"rol"</span>),
+    <span class="fn">F.to_date</span>(<span class="fn">F.col</span>(<span class="str">"created_at"</span>)).<span class="fn">alias</span>(<span class="str">"fecha_registro"</span>)
+)
+
+dim_usuario.<span class="fn">write</span>.<span class="fn">mode</span>(<span class="str">"overwrite"</span>) \
+    .<span class="fn">format</span>(<span class="str">"hive"</span>) \
+    .<span class="fn">saveAsTable</span>(<span class="str">"restaurants_dw.dim_usuario"</span>)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     JOB 1 — cargar_dimensiones.py
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Job 1 — cargar_dimensiones.py</div>
+
+  <div class="job-card">
+    <div class="job-header dim">
+      <div class="job-num dim">1</div>
+      <div>
+        <div class="job-file dim">spark/jobs/cargar_dimensiones.py</div>
+        <div class="job-desc">Carga las 4 tablas de dimensión. Debe ejecutarse <em>antes</em> que los jobs de hechos porque estos resuelven las FK via CRC32.</div>
+      </div>
+    </div>
+    <div class="job-body">
+      <table class="tx-table">
+        <thead>
+          <tr><th>Tabla destino</th><th>Operación</th><th>Tabla fuente (P1)</th><th>Transformación clave</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>dim_tiempo</code></td>
+            <td><span class="tx-op op-calc">CALC</span></td>
+            <td><code>orders</code> + <code>reservations</code></td>
+            <td>
+              <div class="tx-desc">Extrae timestamps únicos, expande cada uno en 11 columnas de tiempo.</div>
+              <div class="tx-code">tiempo_key = year*1000000 + month*10000 + day*100 + hour</div>
+              <div class="tx-code">F.when(mes == 1, "Enero")... (expresión nativa, sin UDF)</div>
+            </td>
+          </tr>
+          <tr>
+            <td><code>dim_usuario</code></td>
+            <td><span class="tx-op op-read">READ</span> <span class="tx-op op-trx">CRC32</span></td>
+            <td><code>users</code></td>
+            <td>
+              <div class="tx-desc">Lee usuarios, genera surrogate key con CRC32 sobre el UUID, descarta password y email.</div>
+              <div class="tx-code">F.crc32(F.col("id").cast("string")).cast("bigint")</div>
+            </td>
+          </tr>
+          <tr>
+            <td><code>dim_restaurante</code></td>
+            <td><span class="tx-op op-read">READ</span> <span class="tx-op op-trx">CRC32</span></td>
+            <td><code>restaurants</code></td>
+            <td>
+              <div class="tx-desc">CRC32 sobre restaurant_id. Incluye nombre, dirección y capacidad.</div>
+            </td>
+          </tr>
+          <tr>
+            <td><code>dim_producto</code></td>
+            <td><span class="tx-op op-read">READ</span> <span class="tx-op op-trx">CRC32</span></td>
+            <td><code>products</code></td>
+            <td>
+              <div class="tx-desc">CRC32 sobre product_id. Precio actual como snapshot. Categoría tomada directamente del menú.</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     JOB 2 — cargar_fact_items_pedido.py
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Job 2 — cargar_fact_items_pedido.py</div>
+
+  <div class="job-card">
+    <div class="job-header fact">
+      <div class="job-num fact">2</div>
+      <div>
+        <div class="job-file fact">spark/jobs/cargar_fact_items_pedido.py</div>
+        <div class="job-desc">Construye la tabla de hechos principal uniendo order_items con orders, users y restaurants via CRC32.</div>
+      </div>
+    </div>
+    <div class="job-body">
+      <table class="tx-table">
+        <thead>
+          <tr><th>Paso</th><th>Operación</th><th>Detalle</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="white-space:nowrap">1. Lectura</td>
+            <td><span class="tx-op op-read">READ</span></td>
+            <td>
+              <div class="tx-desc">Lee <code>order_items</code> y <code>orders</code> vía JDBC desde <code>re2_postgres</code>.</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="white-space:nowrap">2. Join</td>
+            <td><span class="tx-op op-join">JOIN</span></td>
+            <td>
+              <div class="tx-desc">Hace <code>INNER JOIN</code> de <code>order_items</code> con <code>orders</code> en <code>order_id</code> para obtener el timestamp del pedido y el <code>user_id</code>, <code>restaurant_id</code>.</div>
+              <div class="tx-code">items.join(orders, items.order_id == orders.id)</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="white-space:nowrap">3. Surrogate keys</td>
+            <td><span class="tx-op op-trx">CRC32</span></td>
+            <td>
+              <div class="tx-desc">Calcula las 4 FK como CRC32 de sus respectivos UUIDs. El tiempo_key se deriva del <code>created_at</code> del order.</div>
+              <div class="tx-code">tiempo_key = year*1000000 + month*10000 + day*100 + hour</div>
+              <div class="tx-code">usuario_key = crc32(user_id)</div>
+              <div class="tx-code">restaurante_key = crc32(restaurant_id)</div>
+              <div class="tx-code">producto_key = crc32(product_id)</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="white-space:nowrap">4. Medidas</td>
+            <td><span class="tx-op op-calc">CALC</span></td>
+            <td>
+              <div class="tx-desc">Calcula <code>monto_total = cantidad × precio_unitario</code> en Spark. Ambos campos vienen de <code>order_items</code>.</div>
+              <div class="tx-code">F.col("quantity").cast("int")</div>
+              <div class="tx-code">F.col("unit_price").cast("decimal(10,2)")</div>
+              <div class="tx-code">monto_total = cantidad * precio_unitario</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="white-space:nowrap">5. Atributos deg.</td>
+            <td><span class="tx-op op-trx">MAP</span></td>
+            <td>
+              <div class="tx-desc">Mapea <code>status</code> del order (pending / confirmed / cancelled) y <code>takeaway</code> → <code>es_para_llevar</code>.</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="white-space:nowrap">6. Escritura</td>
+            <td><span class="tx-op op-write">WRITE</span></td>
+            <td>
+              <div class="tx-desc">Escribe en Hive con modo <code>overwrite</code>. Usa FileOutputCommitter v2 para commit directo sin staging.</div>
+              <div class="tx-code">df.write.mode("overwrite").format("hive").saveAsTable("restaurants_dw.fact_items_pedido")</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     JOB 3 — cargar_fact_reservaciones.py
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Job 3 — cargar_fact_reservaciones.py</div>
+
+  <div class="job-card">
+    <div class="job-header fact">
+      <div class="job-num fact">3</div>
+      <div>
+        <div class="job-file fact">spark/jobs/cargar_fact_reservaciones.py</div>
+        <div class="job-desc">Versión simplificada: solo 3 FK (sin producto_key), una medida (tamano_grupo) y un atributo degenerado (estado).</div>
+      </div>
+    </div>
+    <div class="job-body">
+      <table class="tx-table">
+        <thead>
+          <tr><th>Paso</th><th>Operación</th><th>Detalle</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1. Lectura</td>
+            <td><span class="tx-op op-read">READ</span></td>
+            <td><div class="tx-desc">Lee tabla <code>reservations</code> via JDBC. Columnas: <code>id</code>, <code>user_id</code>, <code>restaurant_id</code>, <code>reserved_at</code>, <code>party_size</code>, <code>status</code>.</div></td>
+          </tr>
+          <tr>
+            <td>2. Surrogate keys</td>
+            <td><span class="tx-op op-trx">CRC32</span></td>
+            <td>
+              <div class="tx-desc">CRC32 para usuario_key y restaurante_key. tiempo_key derivado de <code>reserved_at</code>.</div>
+            </td>
+          </tr>
+          <tr>
+            <td>3. Escritura</td>
+            <td><span class="tx-op op-write">WRITE</span></td>
+            <td><div class="tx-desc">Overwrite en <code>restaurants_dw.fact_reservaciones</code>.</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     JOB 4 — restaurants_spark_analytics.py
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Job 4 — restaurants_spark_analytics.py</div>
+
+  <div class="job-card">
+    <div class="job-header spark">
+      <div class="job-num spark">4</div>
+      <div>
+        <div class="job-file spark">spark/jobs/restaurants_spark_analytics.py</div>
+        <div class="job-desc">Job de análisis para Neo4J — genera los CSV de nodos y relaciones para cargar el grafo. Se ejecuta manualmente, no via Airflow.</div>
+      </div>
+    </div>
+    <div class="job-body">
+      <table class="tx-table">
+        <thead>
+          <tr><th>Salida</th><th>Contenido</th><th>Destino</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>users.csv</code></td>
+            <td>Nodos User con id, nombre, rol</td>
+            <td rowspan="5" style="vertical-align:middle; font-family:monospace; font-size:11px; color:#64748b; white-space:nowrap;">/opt/neo4j-import/<br>(montado desde neo4j/import/)</td>
+          </tr>
+          <tr>
+            <td><code>orders.csv</code></td>
+            <td>Nodos Order con id, estado, total</td>
+          </tr>
+          <tr>
+            <td><code>products.csv</code></td>
+            <td>Nodos Product con id, nombre, categoría, precio</td>
+          </tr>
+          <tr>
+            <td><code>locations.csv</code></td>
+            <td>Nodos Location extraídos de restaurantes</td>
+          </tr>
+          <tr>
+            <td><code>rel_*.csv</code></td>
+            <td>Relaciones PLACED, CONTAINS, BOUGHT_TOGETHER</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CONFIGURACIÓN SPARK
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Configuración Spark Compartida (via Airflow)</div>
+
+  <div class="warn-box">
+    <strong>spark.driver.host = "ra-airflow"</strong> (con guión, no underscore).<br>
+    Java URI (RFC 2396) rechaza underscores en hostnames, causando "Invalid Spark URL" al enviar el job.
+    El hostname del contenedor Airflow está definido en docker-compose como <code>hostname: ra-airflow</code>.
+  </div>
+
+  <div class="code-block" style="border-radius:10px;">
+<span class="cm"># SPARK_CONF en restaurants_etl.py — compartida por todos los SparkSubmitOperator</span>
+SPARK_CONF = {
+    <span class="str">"spark.sql.catalogImplementation"</span>: <span class="str">"hive"</span>,
+    <span class="str">"spark.sql.warehouse.dir"</span>:           <span class="str">"/opt/hive/data/warehouse"</span>,
+    <span class="str">"spark.hadoop.hive.metastore.uris"</span>:  <span class="str">"thrift://hive-metastore:9083"</span>,
+
+    <span class="cm"># JDBC pre-bakeado en la imagen — evita descargas Maven en runtime</span>
+    <span class="str">"spark.jars"</span>:                         <span class="str">"/opt/airflow/jars/postgresql-42.7.3.jar"</span>,
+
+    <span class="cm"># Hostname del driver (el contenedor ra_airflow)</span>
+    <span class="str">"spark.driver.host"</span>:                 <span class="str">"ra-airflow"</span>,
+    <span class="str">"spark.driver.bindAddress"</span>:          <span class="str">"0.0.0.0"</span>,
+
+    <span class="cm"># FileOutputCommitter v2: commit directo sin staging del driver</span>
+    <span class="str">"spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version"</span>: <span class="str">"2"</span>,
+}</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TAREA DAG
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Flujo de Tareas en el DAG de Airflow</div>
+
+  <div class="task-box">
+    <div class="task-row">
+      <div class="task-name" style="color:#0369a1;">verificar_fuentes</div>
+      <div class="task-op">PythonOperator — SELECT COUNT(*) FROM orders en Postgres P1</div>
+    </div>
+    <div class="task-row">
+      <div class="task-name" style="color:#7c3aed; padding-left:20px;">↳ cargar_dimensiones</div>
+      <div class="task-op">SparkSubmitOperator — ejecuta cargar_dimensiones.py</div>
+    </div>
+    <div class="task-row">
+      <div class="task-name" style="color:#c2410c; padding-left:40px;">↳ cargar_fact_items_pedido</div>
+      <div class="task-op">SparkSubmitOperator — en paralelo con reservaciones</div>
+    </div>
+    <div class="task-row">
+      <div class="task-name" style="color:#c2410c; padding-left:40px;">↳ cargar_fact_reservaciones</div>
+      <div class="task-op">SparkSubmitOperator — en paralelo con fact_items</div>
+    </div>
+    <div class="task-row">
+      <div class="task-name" style="color:#0369a1; padding-left:60px;">↳ verificar_cambios_productos</div>
+      <div class="task-op">BranchPythonOperator — compara hash del catálogo con Variable de Airflow</div>
+    </div>
+    <div class="task-row">
+      <div class="task-name" style="color:#15803d; padding-left:80px;">↳ reindexar_elasticsearch</div>
+      <div class="task-op">PythonOperator — POST /search/reindex con JWT de admin (si hubo cambios)</div>
+    </div>
+    <div class="task-row" style="border-bottom:none;">
+      <div class="task-name" style="color:#94a3b8; padding-left:80px;">↳ sin_cambios (skip)</div>
+      <div class="task-op">EmptyOperator — si el catálogo no cambió, ambas ramas confluyen en pipeline_completo</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

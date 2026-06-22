@@ -57,12 +57,15 @@ SPARK_CONF = {
     "spark.sql.catalogImplementation": "hive",
     "spark.sql.warehouse.dir": "/opt/hive/data/warehouse",
     "spark.hadoop.hive.metastore.uris": "thrift://hive-metastore:9083",
-    "spark.jars.packages": "org.postgresql:postgresql:42.7.3",
+    "spark.jars": "/opt/airflow/jars/postgresql-42.7.3.jar",
     # El driver corre dentro del contenedor ra_airflow.
-    # Debe anunciarse con su hostname en ra_net para que los executors
-    # del spark-worker puedan conectarse (re2_net bloquea esas conexiones).
-    "spark.driver.host": "ra_airflow",
+    # Hostname con guión (no underscore) — Java URI (RFC 2396) rechaza underscores
+    # en hostnames, lo que causa "Invalid Spark URL" en el executor.
+    "spark.driver.host": "ra-airflow",
     "spark.driver.bindAddress": "0.0.0.0",
+    # Commit v2: cada executor hace commit de su tarea directamente al destino
+    # final sin depender del driver para el rename del staging.
+    "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2",
 }
 
 

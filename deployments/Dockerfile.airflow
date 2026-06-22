@@ -17,6 +17,11 @@ RUN apt-get update -qq && \
 ENV JAVA_HOME=/usr/lib/jvm/java-17
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
+# PostgreSQL JDBC driver — pre-descargado para evitar fallos de Maven en runtime
+RUN mkdir -p /opt/airflow/jars && \
+    curl -fsSL https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.3/postgresql-42.7.3.jar \
+         -o /opt/airflow/jars/postgresql-42.7.3.jar
+
 # Script de arranque (inicializa la BD y levanta webserver + scheduler)
 COPY --chmod=755 deployments/airflow/entrypoint.sh /opt/airflow/entrypoint.sh
 

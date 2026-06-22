@@ -250,7 +250,7 @@ def normalize_sources(raw: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
     reservations_raw = raw["reservations"]
 
     users = users_raw.select(
-        column_or_null(users_raw, "user_id").cast("string").alias("user_id"),
+        F.coalesce(column_or_null(users_raw, "user_id"), column_or_null(users_raw, "id"), column_or_null(users_raw, "_id")).cast("string").alias("user_id"),
         column_or_null(users_raw, "name").cast("string").alias("name"),
         F.coalesce(column_or_null(users_raw, "zone"), column_or_null(users_raw, "city"), F.lit("Sin zona")).alias("zone"),
         column_or_null(users_raw, "latitude", "double").cast("double").alias("latitude"),
@@ -523,7 +523,11 @@ def write_csv_folder(df: DataFrame, path: str) -> None:
 def write_single_csv(df: DataFrame, folder: str, filename: str) -> None:
     os.makedirs(folder, exist_ok=True)
 
-    temp_dir = tempfile.mkdtemp(prefix=f"spark-export-{filename.replace('.csv', '')}-", dir="/tmp")
+    # /tmp es local al driver y no es visible para los executors en modo standalone.
+    # Usar /opt/spark-apps/tmp que está montado como volumen compartido.
+    shared_tmp = "/opt/spark-apps/tmp"
+    os.makedirs(shared_tmp, exist_ok=True)
+    temp_dir = tempfile.mkdtemp(prefix=f"spark-export-{filename.replace('.csv', '')}-", dir=shared_tmp)
 
     try:
         (

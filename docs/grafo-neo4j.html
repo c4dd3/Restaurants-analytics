@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modelo de Grafo Neo4J — Restaurants Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 32px 24px;
+  }
+
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .badges { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge { padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; }
+
+  .section { margin-bottom: 44px; max-width: 960px; margin-left: auto; margin-right: auto; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #94a3b8; margin-bottom: 16px;
+  }
+
+  /* ── NODOS DEL GRAFO ── */
+  .nodes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .node-card {
+    background: white; border: 2px solid; border-radius: 10px; overflow: hidden;
+  }
+  .node-header {
+    padding: 10px 14px; font-size: 12px; font-weight: 700; color: white;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .node-label-pill {
+    font-size: 9px; font-weight: 700; background: rgba(255,255,255,.2);
+    padding: 1px 7px; border-radius: 99px; letter-spacing: .04em;
+  }
+  .node-body { padding: 10px 14px; }
+  .prop-row {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-size: 11px;
+  }
+  .prop-row:last-child { border-bottom: none; }
+  .prop-name { font-weight: 600; color: #334155; }
+  .prop-type { color: #94a3b8; font-size: 10px; }
+  .prop-key { font-size: 10px; color: #f59e0b; font-weight: 700; }
+
+  /* Colores por nodo */
+  .n-user     { border-color: #3b82f6; }
+  .n-user     .node-header { background: #3b82f6; }
+  .n-order    { border-color: #f97316; }
+  .n-order    .node-header { background: #f97316; }
+  .n-product  { border-color: #16a34a; }
+  .n-product  .node-header { background: #16a34a; }
+  .n-location { border-color: #7c3aed; }
+  .n-location .node-header { background: #7c3aed; }
+  .n-courier  { border-color: #0891b2; }
+  .n-courier  .node-header { background: #0891b2; }
+
+  /* ── RELACIONES ── */
+  .rels-list { display: flex; flex-direction: column; gap: 10px; }
+  .rel-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 14px 18px; display: flex; align-items: flex-start; gap: 16px;
+  }
+  .rel-cypher {
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+    font-weight: 700; color: #1e293b; white-space: nowrap; flex-shrink: 0;
+    min-width: 340px;
+  }
+  .rel-from  { color: #3b82f6; }
+  .rel-type  { color: #f59e0b; }
+  .rel-to    { color: #16a34a; }
+  .rel-props { font-size: 11px; color: #64748b; line-height: 1.5; }
+  .rel-prop-tag {
+    display: inline-block; font-family: monospace; font-size: 10px;
+    background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+    padding: 1px 6px; border-radius: 4px; margin-right: 4px; margin-bottom: 2px;
+  }
+
+  /* ── CONSULTAS ── */
+  .queries-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .query-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    overflow: hidden; border-left: 4px solid #7c3aed;
+  }
+  .query-header {
+    padding: 10px 14px; background: #f5f3ff;
+    font-size: 11px; font-weight: 700; color: #4c1d95;
+  }
+  .query-body { padding: 12px 14px; }
+  .query-desc { font-size: 11px; color: #64748b; margin-bottom: 10px; line-height: 1.4; }
+  .query-code {
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 10.5px;
+    background: #0f172a; color: #e2e8f0; padding: 10px 12px;
+    border-radius: 6px; line-height: 1.6; white-space: pre-wrap;
+  }
+  .cy-match { color: #7c3aed; }
+  .cy-ret   { color: #3b82f6; }
+  .cy-ord   { color: #f97316; }
+  .cy-lim   { color: #16a34a; }
+  .cy-node  { color: #fbbf24; }
+  .cy-rel   { color: #f87171; }
+  .cy-prop  { color: #86efac; }
+
+  /* ── CARGA DEL GRAFO ── */
+  .load-steps { display: flex; flex-direction: column; gap: 8px; }
+  .load-step {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 12px 16px; display: flex; align-items: flex-start; gap: 14px;
+  }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; background: #7c3aed;
+    color: white; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-title { font-size: 12px; font-weight: 700; color: #1e293b; }
+  .step-desc  { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .step-file  { font-size: 10px; font-family: monospace; color: #7c3aed; margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <h1>Modelo de Grafo Neo4J</h1>
+  <p>Análisis de relaciones, co-compras y rutas · Proyecto 2 · Base de Datos 2 · TEC</p>
+  <div class="badges">
+    <span class="badge" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;">5 Tipos de nodo</span>
+    <span class="badge" style="background:#fefce8;color:#854d0e;border-color:#fde68a;">6 Tipos de relación</span>
+    <span class="badge" style="background:#f5f3ff;color:#4c1d95;border-color:#ddd6fe;">5 Consultas de análisis</span>
+    <span class="badge" style="background:#f0fdf4;color:#14532d;border-color:#bbf7d0;">Cargado con Spark → CSV → cypher-shell</span>
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 1: NODOS ══ -->
+<div class="section">
+  <div class="section-title">Nodos del grafo</div>
+  <div class="nodes-grid">
+
+    <div class="node-card n-user">
+      <div class="node-header">
+        👤 <span>User</span>
+        <span class="node-label-pill">:User</span>
+      </div>
+      <div class="node-body">
+        <div class="prop-row"><span class="prop-key">PK</span><span class="prop-name">user_id</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">name</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">email</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">role</span><span class="prop-type">client | admin</span></div>
+      </div>
+    </div>
+
+    <div class="node-card n-order">
+      <div class="node-header">
+        📦 <span>Order</span>
+        <span class="node-label-pill">:Order</span>
+      </div>
+      <div class="node-body">
+        <div class="prop-row"><span class="prop-key">PK</span><span class="prop-name">order_id</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">status</span><span class="prop-type">confirmed | cancelled</span></div>
+        <div class="prop-row"><span class="prop-name">total</span><span class="prop-type">FLOAT</span></div>
+        <div class="prop-row"><span class="prop-name">pickup</span><span class="prop-type">BOOLEAN</span></div>
+        <div class="prop-row"><span class="prop-name">created_at</span><span class="prop-type">STRING</span></div>
+      </div>
+    </div>
+
+    <div class="node-card n-product">
+      <div class="node-header">
+        🍔 <span>Product</span>
+        <span class="node-label-pill">:Product</span>
+      </div>
+      <div class="node-body">
+        <div class="prop-row"><span class="prop-key">PK</span><span class="prop-name">product_id</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">name</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">category</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">price</span><span class="prop-type">FLOAT</span></div>
+        <div class="prop-row"><span class="prop-name">restaurant_id</span><span class="prop-type">STRING</span></div>
+      </div>
+    </div>
+
+    <div class="node-card n-location">
+      <div class="node-header">
+        📍 <span>Location</span>
+        <span class="node-label-pill">:Location</span>
+      </div>
+      <div class="node-body">
+        <div class="prop-row"><span class="prop-key">PK</span><span class="prop-name">location_id</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">name</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">type</span><span class="prop-type">central | zone</span></div>
+      </div>
+    </div>
+
+    <div class="node-card n-courier">
+      <div class="node-header">
+        🛵 <span>Courier</span>
+        <span class="node-label-pill">:Courier</span>
+      </div>
+      <div class="node-body">
+        <div class="prop-row"><span class="prop-key">PK</span><span class="prop-name">courier_id</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">name</span><span class="prop-type">STRING</span></div>
+        <div class="prop-row"><span class="prop-name">zone</span><span class="prop-type">STRING</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 2: RELACIONES ══ -->
+<div class="section">
+  <div class="section-title">Relaciones</div>
+  <div class="rels-list">
+
+    <div class="rel-card">
+      <div class="rel-cypher">
+        (<span class="rel-from">User</span>)-[:<span class="rel-type">PLACED</span>]→(<span class="rel-to">Order</span>)
+      </div>
+      <div class="rel-props">
+        Un usuario realizó un pedido. Sin propiedades adicionales.
+      </div>
+    </div>
+
+    <div class="rel-card">
+      <div class="rel-cypher">
+        (<span class="rel-from">Order</span>)-[:<span class="rel-type">CONTAINS</span>]→(<span class="rel-to">Product</span>)
+      </div>
+      <div class="rel-props">
+        Un pedido incluye un producto.
+        <div style="margin-top:4px;">
+          <span class="rel-prop-tag">quantity: INT</span>
+          <span class="rel-prop-tag">line_total: FLOAT</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rel-card">
+      <div class="rel-cypher">
+        (<span class="rel-from">Product</span>)-[:<span class="rel-type">BOUGHT_TOGETHER</span>]→(<span class="rel-to">Product</span>)
+      </div>
+      <div class="rel-props">
+        Dos productos aparecieron juntos en al menos un pedido. Calculada por Spark como co-ocurrencia.
+        <div style="margin-top:4px;">
+          <span class="rel-prop-tag">times: INT (co-ocurrencias)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rel-card">
+      <div class="rel-cypher">
+        (<span class="rel-from">User</span>)-[:<span class="rel-type">RECOMMENDS</span>]→(<span class="rel-to">User</span>)
+      </div>
+      <div class="rel-props">
+        Relación de influencia entre usuarios. Generada heurísticamente por Spark basándose en actividad compartida.
+      </div>
+    </div>
+
+    <div class="rel-card">
+      <div class="rel-cypher">
+        (<span class="rel-from">Location</span>)-[:<span class="rel-type">ROUTE_TO</span>]→(<span class="rel-to">Location</span>)
+      </div>
+      <div class="rel-props">
+        Ruta de entrega entre dos ubicaciones. Permite encontrar el camino más corto con algoritmos de grafo.
+        <div style="margin-top:4px;">
+          <span class="rel-prop-tag">distance_km: FLOAT</span>
+          <span class="rel-prop-tag">estimated_minutes: FLOAT</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rel-card">
+      <div class="rel-cypher">
+        (<span class="rel-from">Courier</span>)-[:<span class="rel-type">ASSIGNED_TO</span>]→(<span class="rel-to">Order</span>)
+      </div>
+      <div class="rel-props">
+        Un repartidor fue asignado a un pedido. Asignación calculada por Spark con heurística de zona.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 3: CONSULTAS ══ -->
+<div class="section">
+  <div class="section-title">Consultas de análisis (02_analysis_queries.cypher)</div>
+  <div class="queries-grid">
+
+    <div class="query-card">
+      <div class="query-header">1. Productos más comprados juntos</div>
+      <div class="query-body">
+        <div class="query-desc">Muestra qué productos co-ocurren más veces en pedidos. Útil para recomendaciones y combos.</div>
+        <div class="query-code"><span class="cy-match">MATCH</span> (<span class="cy-node">a</span>:Product)-[<span class="cy-rel">r</span>:BOUGHT_TOGETHER]->(<span class="cy-node">b</span>:Product)
+<span class="cy-ret">RETURN</span> <span class="cy-prop">a.name</span>, <span class="cy-prop">b.name</span>, <span class="cy-prop">r.times</span>
+<span class="cy-ord">ORDER BY</span> <span class="cy-prop">r.times</span> DESC
+<span class="cy-lim">LIMIT</span> 5</div>
+      </div>
+    </div>
+
+    <div class="query-card">
+      <div class="query-header">2. Usuarios influyentes</div>
+      <div class="query-body">
+        <div class="query-desc">Identifica qué usuarios recomiendan a más personas en la red social del sistema.</div>
+        <div class="query-code"><span class="cy-match">MATCH</span> (<span class="cy-node">u</span>:User)-[:RECOMMENDS]->(<span class="cy-node">r</span>:User)
+<span class="cy-ret">RETURN</span> <span class="cy-prop">u.name</span>,
+       count(<span class="cy-node">r</span>) AS recomendados
+<span class="cy-ord">ORDER BY</span> recomendados DESC</div>
+      </div>
+    </div>
+
+    <div class="query-card">
+      <div class="query-header">3. Usuarios más activos</div>
+      <div class="query-body">
+        <div class="query-desc">Top 10 de usuarios con mayor cantidad de pedidos realizados.</div>
+        <div class="query-code"><span class="cy-match">MATCH</span> (<span class="cy-node">u</span>:User)-[:PLACED]->(<span class="cy-node">o</span>:Order)
+<span class="cy-ret">RETURN</span> <span class="cy-prop">u.name</span>,
+       count(<span class="cy-node">o</span>) AS pedidos
+<span class="cy-ord">ORDER BY</span> pedidos DESC
+<span class="cy-lim">LIMIT</span> 10</div>
+      </div>
+    </div>
+
+    <div class="query-card">
+      <div class="query-header">4. Categorías más vendidas</div>
+      <div class="query-body">
+        <div class="query-desc">Ingresos y unidades totales por categoría de producto, calculados desde el grafo.</div>
+        <div class="query-code"><span class="cy-match">MATCH</span> (:Order)-[<span class="cy-rel">r</span>:CONTAINS]->(<span class="cy-node">p</span>:Product)
+<span class="cy-ret">RETURN</span> <span class="cy-prop">p.category</span>,
+       sum(<span class="cy-prop">r.quantity</span>) AS unidades,
+       round(sum(<span class="cy-prop">r.line_total</span>), 2) AS ingresos
+<span class="cy-ord">ORDER BY</span> ingresos DESC</div>
+      </div>
+    </div>
+
+    <div class="query-card" style="grid-column: 1 / -1;">
+      <div class="query-header">5. Ruta de entrega más corta desde el centro</div>
+      <div class="query-body">
+        <div class="query-desc">Encuentra los destinos con menor distancia acumulada desde la ubicación central, recorriendo hasta 8 saltos en el grafo de rutas.</div>
+        <div class="query-code"><span class="cy-match">MATCH</span> path = (:Location {<span class="cy-prop">location_id</span>: <span style="color:#fbbf24;">'loc-central'</span>})-[:ROUTE_TO*1..8]->(<span class="cy-node">dest</span>:Location)
+<span class="cy-match">WITH</span> path, <span class="cy-node">dest</span>,
+     reduce(total = 0.0, rel IN relationships(path) |
+       total + coalesce(<span class="cy-prop">rel.distance_km</span>, 0.0)) AS distancia_km,
+     reduce(tiempo = 0.0, rel IN relationships(path) |
+       tiempo + coalesce(<span class="cy-prop">rel.estimated_minutes</span>, 0.0)) AS tiempo_min
+<span class="cy-ret">RETURN</span> <span class="cy-prop">dest.name</span>,
+       [node IN nodes(path) | <span class="cy-prop">node.name</span>] AS ruta,
+       round(distancia_km, 3) AS distancia_km,
+       round(tiempo_min, 2) AS tiempo_min
+<span class="cy-ord">ORDER BY</span> distancia_km ASC
+<span class="cy-lim">LIMIT</span> 5</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SECCIÓN 4: CARGA DEL GRAFO ══ -->
+<div class="section">
+  <div class="section-title">Cómo se carga el grafo</div>
+  <div class="load-steps">
+
+    <div class="load-step">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Spark genera los CSVs</div>
+        <div class="step-desc">El job de Spark lee Postgres y MongoDB del Proyecto 1, calcula co-compras, recomendaciones y asignaciones de repartidores, y escribe los CSVs en el volumen compartido con Neo4J.</div>
+        <div class="step-file">spark/jobs/restaurants_spark_analytics.py --source postgres</div>
+      </div>
+    </div>
+
+    <div class="load-step">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Se crean los constraints e índices</div>
+        <div class="step-desc">Define unicidad en los IDs de cada tipo de nodo para evitar duplicados al recargar.</div>
+        <div class="step-file">neo4j/queries/00_constraints.cypher</div>
+      </div>
+    </div>
+
+    <div class="load-step">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">Se cargan nodos y relaciones</div>
+        <div class="step-desc">Carga los CSVs usando <code>LOAD CSV</code> y <code>MERGE</code>. Crea todos los nodos (User, Order, Product, Location, Courier) y sus relaciones.</div>
+        <div class="step-file">neo4j/queries/01_load_graph.cypher</div>
+      </div>
+    </div>
+
+    <div class="load-step">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">Se ejecutan las consultas de análisis</div>
+        <div class="step-desc">Valida la carga y produce los resultados de co-compras, usuarios influyentes, categorías y rutas de entrega.</div>
+        <div class="step-file">neo4j/queries/02_analysis_queries.cypher</div>
+      </div>
+    </div>
+
+  </div>
+  <p style="margin-top:12px;font-size:11px;color:#94a3b8;max-width:960px;">
+    Para recargar manualmente: <code>make neo4j-load</code> · Para correr las consultas: <code>make neo4j-analysis</code>
+  </p>
+</div>
+
+<div style="text-align:center;font-size:11px;color:#cbd5e1;margin-top:8px;">
+  Proyecto 2 · Base de Datos 2 · TEC · Prof. Kenneth Obando Rodríguez
+</div>
+
+</body>
+</html>

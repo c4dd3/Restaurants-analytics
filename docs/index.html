@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentación — Restaurants Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 48px 24px;
+  }
+
+  .header { text-align: center; margin-bottom: 56px; }
+  .header h1 { font-size: 26px; font-weight: 800; color: #0f172a; }
+  .header p  { font-size: 14px; color: #64748b; margin-top: 8px; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .header-badges { margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge {
+    padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid;
+  }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+  .badge-green  { background: #dcfce7; color: #15803d; border-color: #86efac; }
+  .badge-orange { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+
+  .index-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  @media (max-width: 700px) {
+    .index-grid { grid-template-columns: 1fr; }
+  }
+
+  .section-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .10em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    opacity: .2;
+  }
+
+  .section-header.entendimiento { color: #7c3aed; }
+  .section-header.tecnica       { color: #0369a1; }
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 20px 22px;
+    display: flex;
+    gap: 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow .15s, border-color .15s, transform .1s;
+    cursor: pointer;
+  }
+  .card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    border-color: #c7d2fe;
+    transform: translateY(-1px);
+  }
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .icon-purple { background: #f3e8ff; }
+  .icon-blue   { background: #dbeafe; }
+  .icon-teal   { background: #ccfbf1; }
+  .icon-orange { background: #ffedd5; }
+  .icon-slate  { background: #f1f5f9; }
+  .icon-green  { background: #dcfce7; }
+  .icon-pink   { background: #fce7f3; }
+
+  .card-body { flex: 1; }
+  .card-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .card-desc  { font-size: 12px; color: #64748b; line-height: 1.5; }
+  .card-tags  { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    border: 1px solid;
+  }
+  .tag-purple { background: #f3e8ff; color: #7c3aed; border-color: #e9d5ff; }
+  .tag-blue   { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+  .tag-teal   { background: #ccfbf1; color: #0f766e; border-color: #99f6e4; }
+  .tag-orange { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+  .tag-slate  { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+  .tag-green  { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+
+  .divider { grid-column: 1 / -1; height: 1px; background: #e2e8f0; margin: 8px 0; }
+
+  .footer { text-align: center; margin-top: 56px; font-size: 11px; color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📚 Documentación del Proyecto</h1>
+  <p>Restaurants Analytics — Proyecto 2 de Base de Datos 2, TEC.<br>
+     Pipeline ETL con Spark, Hive, Airflow, Neo4J y Metabase.</p>
+  <div class="header-badges">
+    <span class="badge badge-blue">Spark 3.5</span>
+    <span class="badge badge-green">Airflow 2</span>
+    <span class="badge badge-orange">Neo4J 5.20</span>
+    <span class="badge badge-blue">Hive 3</span>
+    <span class="badge badge-green">Metabase 0.61</span>
+  </div>
+</div>
+
+<div class="index-grid">
+
+  <!-- ══════════════════════════════════════════════════════
+       SECCIÓN A — ENTENDIMIENTO CONCEPTUAL
+  ═══════════════════════════════════════════════════════ -->
+  <div style="grid-column: 1 / -1;">
+    <div class="section-header entendimiento">🔍 Entendimiento del Sistema</div>
+  </div>
+
+  <!-- Arquitectura -->
+  <a class="card" href="arquitectura.html">
+    <div class="card-icon icon-purple">🏗️</div>
+    <div class="card-body">
+      <div class="card-title">Arquitectura del Sistema</div>
+      <div class="card-desc">Visión general de los dos proyectos: flujo de datos de Proyecto 1 a Proyecto 2, capas del stack y referencia de servicios.</div>
+      <div class="card-tags">
+        <span class="tag tag-purple">Diagrama</span>
+        <span class="tag tag-slate">Servicios</span>
+        <span class="tag tag-slate">Puertos</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Esquema Estrella -->
+  <a class="card" href="esquema-estrella.html">
+    <div class="card-icon icon-teal">⭐</div>
+    <div class="card-body">
+      <div class="card-title">Esquema Estrella</div>
+      <div class="card-desc">Modelo dimensional del Data Warehouse: dimensiones, tablas de hechos, y las 6 vistas OLAP con sus propósitos analíticos.</div>
+      <div class="card-tags">
+        <span class="tag tag-teal">Hive DW</span>
+        <span class="tag tag-blue">Star Schema</span>
+        <span class="tag tag-teal">OLAP</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Airflow -->
+  <a class="card" href="airflow-explicado.html">
+    <div class="card-icon icon-orange">🔄</div>
+    <div class="card-body">
+      <div class="card-title">Pipeline Airflow</div>
+      <div class="card-desc">DAG de ETL: grafo de tareas, operadores usados (SparkSubmit, BranchPython), conexiones y flujo de ejecución diario.</div>
+      <div class="card-tags">
+        <span class="tag tag-orange">Airflow</span>
+        <span class="tag tag-orange">DAG</span>
+        <span class="tag tag-slate">Spark</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Neo4J -->
+  <a class="card" href="grafo-neo4j.html">
+    <div class="card-icon icon-green">🕸️</div>
+    <div class="card-body">
+      <div class="card-title">Modelo de Grafo Neo4J</div>
+      <div class="card-desc">Nodos, relaciones, propiedades y consultas Cypher del grafo de usuarios, pedidos, productos, ubicaciones y repartidores.</div>
+      <div class="card-tags">
+        <span class="tag tag-green">Neo4J</span>
+        <span class="tag tag-green">Cypher</span>
+        <span class="tag tag-slate">Grafo</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- DIVISOR -->
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECCIÓN B — DOCUMENTACIÓN TÉCNICA
+  ═══════════════════════════════════════════════════════ -->
+  <div style="grid-column: 1 / -1;">
+    <div class="section-header tecnica">⚙️ Documentación Técnica</div>
+  </div>
+
+  <!-- DDL Hive -->
+  <a class="card" href="tecnico-hive-ddl.html">
+    <div class="card-icon icon-blue">🗄️</div>
+    <div class="card-body">
+      <div class="card-title">Referencia DDL — Hive</div>
+      <div class="card-desc">DDL completo de las 6 tablas del DW: tipos exactos, llaves surrogate, comentarios de columna, formato ORC/SNAPPY y estrategia de escritura.</div>
+      <div class="card-tags">
+        <span class="tag tag-blue">DDL</span>
+        <span class="tag tag-blue">Hive</span>
+        <span class="tag tag-slate">ORC</span>
+        <span class="tag tag-slate">Tipos</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- OLAP Views -->
+  <a class="card" href="tecnico-olap-views.html">
+    <div class="card-icon icon-teal">📊</div>
+    <div class="card-body">
+      <div class="card-title">Referencia OLAP — Vistas SQL</div>
+      <div class="card-desc">SQL completo de las 6 vistas OLAP, con window functions (RANK, LAG, SUM OVER PARTITION) explicadas y casos de uso por dashboard.</div>
+      <div class="card-tags">
+        <span class="tag tag-teal">OLAP</span>
+        <span class="tag tag-teal">Window Fn</span>
+        <span class="tag tag-blue">SQL</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Docker -->
+  <a class="card" href="tecnico-docker.html">
+    <div class="card-icon icon-slate">🐳</div>
+    <div class="card-body">
+      <div class="card-title">Topología Docker</div>
+      <div class="card-desc">Contenedores, imágenes, redes (ra_net / re2_net), volúmenes, dependencias de arranque, health checks y puertos expuestos.</div>
+      <div class="card-tags">
+        <span class="tag tag-slate">Docker</span>
+        <span class="tag tag-slate">Networks</span>
+        <span class="tag tag-slate">Volumes</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- ETL Transformaciones -->
+  <a class="card" href="tecnico-etl-transformaciones.html">
+    <div class="card-icon icon-pink">⚡</div>
+    <div class="card-body">
+      <div class="card-title">Transformaciones ETL — Spark</div>
+      <div class="card-desc">Jobs de Spark en detalle: generación de llaves surrogate con CRC32, lecturas JDBC desde Postgres, joins, casteos y escritura en Hive.</div>
+      <div class="card-tags">
+        <span class="tag tag-orange">Spark</span>
+        <span class="tag tag-slate">CRC32</span>
+        <span class="tag tag-blue">JDBC</span>
+        <span class="tag tag-teal">Python</span>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<div class="footer">
+  Restaurants-analytics · Proyecto 2 BD2 TEC · <a href="../README.md" style="color:#94a3b8;">README</a> · <a href="../MANUAL.md" style="color:#94a3b8;">Manual</a>
+</div>
+
+</body>
+</html>
