@@ -317,15 +317,21 @@
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div> Dimensión — responde quién, qué, cuándo, dónde</div>
     <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> Tabla de hechos — guarda los números a analizar</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#cbd5e1;border-radius:1px;height:3px;width:20px;"></div> Llave foránea (FK) que conecta ambas</div>
+    <div class="legend-item">
+      <svg width="28" height="10" style="flex-shrink:0"><line x1="0" y1="5" x2="28" y2="5" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,2"/></svg>
+      Llave foránea (FK) que conecta ambas
+    </div>
   </div>
 
-  <!-- FILA SUPERIOR: dim_tiempo centrada -->
-  <div style="max-width:860px;margin:0 auto;">
+  <!-- ── DIAGRAMA POSICIONADO CON SVG OVERLAY ── -->
+  <div id="star-diagram" style="position:relative;max-width:860px;margin:0 auto;">
 
-    <!-- dim_tiempo -->
-    <div style="display:flex;justify-content:center;margin-bottom:0;">
-      <div class="card dim" style="width:320px;">
+    <!-- SVG para las líneas — queda encima pero sin bloquear clics -->
+    <svg id="star-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <!-- FILA SUPERIOR: dim_tiempo centrada -->
+    <div style="display:flex;justify-content:center;margin-bottom:16px;">
+      <div class="card dim" id="dim_tiempo" style="width:320px;">
         <div class="card-header">
           🕐 dim_tiempo
           <div class="card-subtitle">Dimensión temporal — generada desde los timestamps</div>
@@ -340,23 +346,11 @@
       </div>
     </div>
 
-    <!-- Conectores desde dim_tiempo hacia abajo -->
-    <div style="display:flex;justify-content:space-between;max-width:680px;margin:0 auto;padding:0 40px;">
-      <div style="display:flex;flex-direction:column;align-items:center;">
-        <div class="connector-line-v"></div>
-        <div class="arrow-down"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;">
-        <div class="connector-line-v"></div>
-        <div class="arrow-down"></div>
-      </div>
-    </div>
-
-    <!-- FILA MEDIA: dim_usuario | facts | dim_restaurante -->
-    <div style="display:grid;grid-template-columns:180px 1fr 1fr 180px;gap:12px;align-items:start;">
+    <!-- FILA MEDIA: dim_usuario | fact_items | fact_reservaciones | dim_restaurante -->
+    <div style="display:grid;grid-template-columns:190px 1fr 1fr 190px;gap:12px;align-items:start;margin-bottom:16px;">
 
       <!-- dim_usuario -->
-      <div class="card dim">
+      <div class="card dim" id="dim_usuario">
         <div class="card-header">
           👤 dim_usuario
           <div class="card-subtitle">Clientes y admins</div>
@@ -371,7 +365,7 @@
       </div>
 
       <!-- fact_items_pedido -->
-      <div class="card fact">
+      <div class="card fact" id="fact_items">
         <div class="card-header">
           ⭐ fact_items_pedido
           <div class="card-subtitle">Tabla de hechos principal — un ítem por fila</div>
@@ -391,7 +385,7 @@
       </div>
 
       <!-- fact_reservaciones -->
-      <div class="card fact">
+      <div class="card fact" id="fact_reservaciones">
         <div class="card-header">
           ⭐ fact_reservaciones
           <div class="card-subtitle">Ocupación y cancelaciones</div>
@@ -408,7 +402,7 @@
       </div>
 
       <!-- dim_restaurante -->
-      <div class="card dim">
+      <div class="card dim" id="dim_restaurante">
         <div class="card-header">
           🏠 dim_restaurante
           <div class="card-subtitle">Locales y zonas</div>
@@ -424,17 +418,9 @@
 
     </div>
 
-    <!-- Conectores hacia dim_producto -->
-    <div style="display:flex;justify-content:center;margin-top:0;">
-      <div style="display:flex;flex-direction:column;align-items:center;">
-        <div class="connector-line-v"></div>
-        <div class="arrow-down"></div>
-      </div>
-    </div>
-
-    <!-- dim_producto -->
+    <!-- FILA INFERIOR: dim_producto centrada bajo fact_items -->
     <div style="display:flex;justify-content:center;">
-      <div class="card dim" style="width:360px;">
+      <div class="card dim" id="dim_producto" style="width:360px;">
         <div class="card-header">
           🍔 dim_producto
           <div class="card-subtitle">Ítems del menú por categoría</div>
@@ -453,12 +439,109 @@
       </div>
     </div>
 
-    <!-- Nota: dim_producto solo conecta a fact_items_pedido -->
     <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px;">
       ⚠️ <code>dim_producto</code> solo conecta a <code>fact_items_pedido</code> — las reservaciones no tienen productos asociados.
     </p>
 
-  </div>
+  </div><!-- /star-diagram -->
+
+  <script>
+  (function() {
+    function rect(id) {
+      const el = document.getElementById(id);
+      const diagram = document.getElementById('star-diagram');
+      const er = el.getBoundingClientRect();
+      const dr = diagram.getBoundingClientRect();
+      return {
+        top:    er.top    - dr.top,
+        bottom: er.bottom - dr.top,
+        left:   er.left   - dr.left,
+        right:  er.right  - dr.left,
+        cx:     er.left   - dr.left + er.width  / 2,
+        cy:     er.top    - dr.top  + er.height / 2,
+      };
+    }
+
+    function drawLine(svg, x1, y1, x2, y2, color, dashed) {
+      const NS = 'http://www.w3.org/2000/svg';
+      // cubic bezier for smooth curve
+      const dx = x2 - x1, dy = y2 - y1;
+      const cx1 = x1 + dx * 0.1, cy1 = y1 + dy * 0.5;
+      const cx2 = x2 - dx * 0.1, cy2 = y2 - dy * 0.5;
+
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', `M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}`);
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('opacity', '0.7');
+      if (dashed) path.setAttribute('stroke-dasharray', '5,3');
+      svg.appendChild(path);
+
+      // arrowhead at end
+      const angle = Math.atan2(y2 - cy2, x2 - cx2);
+      const AL = 8;
+      const ax1 = x2 - AL * Math.cos(angle - 0.4);
+      const ay1 = y2 - AL * Math.sin(angle - 0.4);
+      const ax2 = x2 - AL * Math.cos(angle + 0.4);
+      const ay2 = y2 - AL * Math.sin(angle + 0.4);
+      const arrow = document.createElementNS(NS, 'polygon');
+      arrow.setAttribute('points', `${x2},${y2} ${ax1},${ay1} ${ax2},${ay2}`);
+      arrow.setAttribute('fill', color);
+      arrow.setAttribute('opacity', '0.8');
+      svg.appendChild(arrow);
+    }
+
+    function drawConnections() {
+      const svg = document.getElementById('star-svg');
+      svg.innerHTML = '';
+
+      const DIM   = '#3b82f6';
+      const FACT  = '#f59e0b';
+
+      const dt  = rect('dim_tiempo');
+      const du  = rect('dim_usuario');
+      const dr  = rect('dim_restaurante');
+      const dp  = rect('dim_producto');
+      const fi  = rect('fact_items');
+      const fr  = rect('fact_reservaciones');
+
+      // fact_items ← dim_tiempo (top center of fact → bottom center of dim)
+      drawLine(svg, fi.cx, fi.top,    dt.cx, dt.bottom, DIM, true);
+
+      // fact_items ← dim_usuario (left of fact → right of dim)
+      drawLine(svg, fi.left, fi.cy - 20, du.right, du.cy, DIM, true);
+
+      // fact_items ← dim_restaurante (right of fact → left of dim)
+      drawLine(svg, fi.right, fi.cy - 20, dr.left, dr.cy, DIM, true);
+
+      // fact_items ← dim_producto (bottom center of fact → top center of dim)
+      drawLine(svg, fi.cx, fi.bottom, dp.cx, dp.top, DIM, true);
+
+      // fact_reservaciones ← dim_tiempo (top of fact_res → bottom-right of dim)
+      drawLine(svg, fr.cx, fr.top, dt.cx + 40, dt.bottom, DIM, true);
+
+      // fact_reservaciones ← dim_usuario (left-bottom of fact_res → right-bottom of dim)
+      drawLine(svg, fr.left, fr.cy + 10, du.right, du.cy + 20, DIM, true);
+
+      // fact_reservaciones ← dim_restaurante (right of fact_res → left of dim)
+      drawLine(svg, fr.right, fr.cy - 20, dr.left, dr.cy, DIM, true);
+
+      // Update SVG height to match diagram
+      const diagram = document.getElementById('star-diagram');
+      svg.setAttribute('height', diagram.offsetHeight);
+    }
+
+    // Run after full render
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { setTimeout(drawConnections, 100); });
+    } else {
+      setTimeout(drawConnections, 100);
+    }
+    window.addEventListener('resize', function() { setTimeout(drawConnections, 50); });
+  })();
+  </script>
+
 </div>
 
 <!-- ══ SECCIÓN 3: VISTAS OLAP ══ -->
