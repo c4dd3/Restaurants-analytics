@@ -29,30 +29,30 @@ Extiende el [Proyecto 1 (Restaurants-e2)](https://github.com/c4dd3/Restaurants-e
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                     Proyecto 1  —  re2_net                       │
-│          Postgres          MongoDB          ElasticSearch         │
+│          Postgres          MongoDB          ElasticSearch        │
 └────────────────────────────┬─────────────────────────────────────┘
                              │  red externa (RE2_NETWORK_NAME)
 ┌────────────────────────────▼─────────────────────────────────────┐
-│                  Stack de Analítica  —  ra_net                    │
-│                                                                   │
+│                  Stack de Analítica  —  ra_net                   │
+│                                                                  │
 │   ┌──────────────────────┐        ┌───────────────────────────┐  │
-│   │    Apache Airflow    │──────▶ │      Apache Spark         │  │
+│   │    Apache Airflow    │──────> │      Apache Spark         │  │
 │   │    DAG: ETL pipeline │        │    Master  +  Worker      │  │
 │   │    :8085             │        │    :8090 (UI)  /  :7077   │  │
 │   └──────────────────────┘        └─────────────┬─────────────┘  │
 │                                                 │                │
 │                  ┌──────────────────────────────▼─────────────┐  │
-│                  │               Apache Hive                   │  │
-│                  │   Metastore (:9083) + HiveServer2 (:10000)  │  │
-│                  │   Data Warehouse — esquema estrella         │  │
-│                  └──────────────┬──────────────────────────────┘  │
+│                  │               Apache Hive                  │  │
+│                  │   Metastore (:9083) + HiveServer2 (:10000) │  │
+│                  │   Data Warehouse — esquema estrella        │  │
+│                  └──────────────┬─────────────────────────────┘  │
 │                                 │                                │
-│   ┌─────────────────────────────▼──────┐  ┌──────────────────┐  │
-│   │             Metabase               │  │      Neo4J       │  │
-│   │   Dashboards de visualización      │  │  Grafos y rutas  │  │
-│   │   :3000                            │  │  :7474  /  :7687 │  │
-│   └────────────────────────────────────┘  └──────────────────┘  │
-│                                                                   │
+│   ┌─────────────────────────────▼──────┐  ┌──────────────────┐   │
+│   │             Metabase               │  │      Neo4J       │   │
+│   │   Dashboards de visualización      │  │  Grafos y rutas  │   │
+│   │   :3000                            │  │  :7474  /  :7687 │   │
+│   └────────────────────────────────────┘  └──────────────────┘   │
+│                                                                  │
 │   ┌───────────────────────────────────────────────────────────┐  │
 │   │                      analytics-db                         │  │
 │   │    Postgres:  hive_metastore  |  airflow  |  metabase     │  │
@@ -253,7 +253,7 @@ Base de datos: `restaurants_dw`
                     │  hora       │
                     └──────┬──────┘
                            │
-┌──────────────────┐ ┌─────▼─────────────────┐ ┌──────────────────┐
+┌──────────────────┐ ┌─────▼──────────────────┐ ┌──────────────────┐
 │   dim_usuario    │ │   fact_items_pedido    │ │   dim_producto   │
 │   usuario_key    │─│   tiempo_key (FK)      │─│   producto_key   │
 │   nombre         │ │   usuario_key (FK)     │ │   nombre         │
