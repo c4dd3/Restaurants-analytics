@@ -136,6 +136,35 @@ def seed(conn, n_orders: int, n_reservations: int) -> None:
         reservations_inserted += 1
 
     conn.commit()
+
+    # ------------------------------------------------------------------
+    # referred_by — recomendaciones entre usuarios
+    # ------------------------------------------------------------------
+    print("[INFO] Sembrando relaciones referred_by...")
+
+    cur.execute("""
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES users(id) ON DELETE SET NULL;
+    """)
+    cur.execute("UPDATE users SET referred_by = NULL")
+
+    if len(all_users) >= 2:
+        referrers = random.sample(all_users, max(1, len(all_users) // 3))
+        candidates = [u for u in all_users if u not in referrers]
+        referred_count = 0
+        for u in candidates:
+            if random.random() < 0.5:
+                referrer = random.choice(referrers)
+                cur.execute(
+                    "UPDATE users SET referred_by = %s WHERE id = %s",
+                    (referrer, u),
+                )
+                referred_count += 1
+        print(f"[INFO] {referred_count} usuarios con referred_by asignado")
+    else:
+        print("[WARN] Pocos usuarios para generar recomendaciones")
+
+    conn.commit()
     cur.close()
 
     print(f"""
