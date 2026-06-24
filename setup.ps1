@@ -125,7 +125,9 @@ docker compose -f deployments/docker-compose.yml --env-file .env up --build -d
 
 Write-Step "Esperando que analytics-db este lista..."
 Wait-For "analytics-db" 20 5 {
-    docker exec ra_analytics_db pg_isready -U analytics 2>$null | Out-Null
+    $ErrorActionPreference = "Continue"
+    docker exec ra_analytics_db pg_isready -U analytics 2>&1 | Out-Null
+    $ErrorActionPreference = "Stop"
     return ($LASTEXITCODE -eq 0)
 }
 
@@ -144,7 +146,9 @@ docker restart ra_airflow
 
 Write-Step "Esperando que Airflow DB este lista..."
 Wait-For "Airflow DB" 24 5 {
-    docker exec ra_airflow airflow db check 2>$null | Out-Null
+    $ErrorActionPreference = "Continue"
+    docker exec ra_airflow airflow db check 2>&1 | Out-Null
+    $ErrorActionPreference = "Stop"
     return ($LASTEXITCODE -eq 0)
 }
 
@@ -172,11 +176,28 @@ foreach ($conn in $connections) {
 
 # -- [7/9] Esquema Hive -------------------------------------------------------
 Write-Header "[7/9] Creando esquema Hive (dimensiones, hechos, vistas OLAP)..."
+
+Write-Step "Esperando que ra_hive_server este corriendo..."
+Wait-For "ra_hive_server" 24 10 {
+    $status = docker inspect --format="{{.State.Status}}" ra_hive_server 2>$null
+    return ($status -eq "running")
+}
+
+Write-Step "Esperando que HiveServer2 acepte conexiones (puerto 10000)..."
+Wait-For "HiveServer2" 24 10 {
+    $ErrorActionPreference = "Continue"
+    $out = docker exec ra_hive_server bash -c "echo > /dev/tcp/localhost/10000" 2>&1
+    $ErrorActionPreference = "Stop"
+    return ($LASTEXITCODE -eq 0)
+}
+
 foreach ($schema in @("01_dimensions", "02_facts", "03_olap_views")) {
     $file = "hive\schema\$schema.hql"
     Write-Step "Ejecutando $schema.hql..."
+    $ErrorActionPreference = "Continue"
     Get-Content $file | docker exec -i ra_hive_server beeline `
-        -u "jdbc:hive2://localhost:10000" -n root --silent=true 2>&1
+        -u "jdbc:hive2://localhost:10000" -n root --silent=true 2>&1 | Out-Null
+    $ErrorActionPreference = "Stop"
     if ($LASTEXITCODE -ne 0) { Write-Fail "Error ejecutando $schema.hql" }
     Write-Ok "$schema.hql ejecutado"
 }
@@ -186,7 +207,9 @@ Write-Header "[8/9] Ejecutando ETL (Airflow DAG)..."
 
 Write-Step "Esperando que Airflow este healthy..."
 Wait-For "Airflow" 40 15 {
-    $status = docker inspect --format="{{.State.Health.Status}}" ra_airflow 2>$null
+    $ErrorActionPreference = "Continue"
+    $status = docker inspect --format="{{.State.Health.Status}}" ra_airflow 2>&1
+    $ErrorActionPreference = "Stop"
     return ($status -eq "healthy")
 }
 
