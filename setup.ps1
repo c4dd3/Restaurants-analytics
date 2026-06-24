@@ -166,11 +166,13 @@ $connections = @(
     }
 )
 foreach ($conn in $connections) {
-    try {
-        docker exec ra_airflow airflow connections add $conn.id @($conn.args) 2>$null
+    $ErrorActionPreference = "Continue"
+    docker exec ra_airflow airflow connections add $conn.id @($conn.args) 2>&1 | Out-Null
+    $ErrorActionPreference = "Stop"
+    if ($LASTEXITCODE -eq 0) {
         Write-Ok "Conexion '$($conn.id)' creada"
-    } catch {
-        Write-Warn "Conexion '$($conn.id)' ya existe"
+    } else {
+        Write-Warn "Conexion '$($conn.id)' ya existe o fallo (exit $LASTEXITCODE)"
     }
 }
 
