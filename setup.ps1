@@ -99,6 +99,18 @@ Wait-For "API Proyecto 1" 24 5 {
 # -- [4/9] Seed base ----------------------------------------------------------
 Write-Header "[4/9] Sembrando datos base en Proyecto 1..."
 Push-Location $P1
+
+# PowerShell no carga .env automaticamente — exportar variables de P1 al proceso
+if (Test-Path ".env") {
+    Get-Content ".env" | Where-Object { $_ -match "^[A-Za-z_][A-Za-z0-9_]*=" } | ForEach-Object {
+        $parts = $_ -split "=", 2
+        $k = $parts[0].Trim()
+        $v = if ($parts.Length -gt 1) { $parts[1].Trim() } else { "" }
+        [System.Environment]::SetEnvironmentVariable($k, $v, "Process")
+    }
+    Write-Step "Variables de P1 cargadas desde .env"
+}
+
 go run ./scripts/seed -restaurants=10 -menus-per=2 -products-per=8 -users=20
 if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Fail "Seed base fallo" }
 Pop-Location
