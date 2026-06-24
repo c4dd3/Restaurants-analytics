@@ -96,6 +96,12 @@ Wait-For "API Proyecto 1" 24 5 {
     } catch { return $false }
 }
 
+Write-Step "Asegurando contrasena de postgres en P1..."
+$ErrorActionPreference = "Continue"
+docker exec re2_postgres psql -U postgres -c "ALTER USER postgres PASSWORD 'postgres';" 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
+Write-Ok "Contrasena de postgres confirmada"
+
 # -- [4/9] Seed base ----------------------------------------------------------
 Write-Header "[4/9] Sembrando datos base en Proyecto 1..."
 Push-Location $P1
