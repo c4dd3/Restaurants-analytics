@@ -504,6 +504,15 @@ Restaurants-analytics/
 
 ## Solución de problemas
 
+**Airflow falla con `\r': command not found` o `invalid choice: 'migrate\r'` (Windows)**  
+Git convirtió los saltos de línea de `entrypoint.sh` a CRLF al clonar. El `.gitattributes` del repo previene esto, pero si ya clonaste antes de que existiera ese archivo tenés que re-aplicarlo:
+```powershell
+git pull
+git rm --cached -r .
+git reset --hard
+```
+Luego `.\teardown.ps1` y `.\setup.ps1` de nuevo.
+
 **El DAG falla en `cargar_dimensiones` con error de descarga de JAR**  
 El driver JDBC de PostgreSQL se pre-descarga durante el build de la imagen. Si el error persiste, reconstruir el contenedor: `docker compose -f deployments/docker-compose.yml build airflow`.
 
