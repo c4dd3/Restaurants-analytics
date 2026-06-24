@@ -240,10 +240,12 @@ for ($i = 1; $i -le 80; $i++) {
 if (-not $dagDone) { Write-Warn "Timeout esperando el DAG - revisa el estado en Airflow UI" }
 
 Write-Step "Verificando datos en Hive..."
+$ErrorActionPreference = "Continue"
 docker exec ra_hive_server beeline -u "jdbc:hive2://localhost:10000" `
     -n root --silent=true `
     -e "SELECT 'fact_items_pedido', COUNT(*) FROM restaurants_dw.fact_items_pedido UNION ALL SELECT 'dim_tiempo', COUNT(*) FROM restaurants_dw.dim_tiempo;" `
     2>&1 | Where-Object { $_ -notmatch "SLF4J" }
+$ErrorActionPreference = "Stop"
 
 # -- [9/9] Neo4J + Metabase ---------------------------------------------------
 Write-Header "[9/9] Cargando grafo Neo4J y configurando Metabase..."
