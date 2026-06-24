@@ -164,18 +164,29 @@ El proceso tarda entre 15 y 25 minutos. Al finalizar imprime las mismas URLs y c
 
 ### Comandos equivalentes en PowerShell
 
-| `make` (macOS/Linux) | PowerShell (Windows) |
-|----------------------|----------------------|
-| `make setup` | `.\setup.ps1` |
-| `make up` | `docker compose -f deployments/docker-compose.yml --env-file .env up --build -d` |
-| `make down` | `docker compose -f deployments/docker-compose.yml --env-file .env down` |
-| `make down-v` | `docker compose -f deployments/docker-compose.yml --env-file .env down -v` |
-| `make logs` | `docker compose -f deployments/docker-compose.yml --env-file .env logs -f` |
-| `make ps` | `docker compose -f deployments/docker-compose.yml --env-file .env ps` |
-| `make beeline` | `docker exec -it ra_hive_server beeline -u jdbc:hive2://localhost:10000` |
-| `make neo4j-shell` | `docker exec -it ra_neo4j cypher-shell -u neo4j -p Analytics2024!` |
-| `make neo4j-load` | Ver sección [8. Cargar el grafo Neo4J](MANUAL.md#8-cargar-el-grafo-neo4j) |
-| `make spark-job-sample` | `docker exec -it ra_spark_master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/spark-apps/jobs/restaurants_spark_analytics.py --source sample` |
+El repo incluye `win.ps1`, que reemplaza todos los targets del Makefile:
+
+```powershell
+.\win.ps1 setup          # levanta todo desde cero
+.\win.ps1 teardown       # baja P1 y P2 con volúmenes
+.\win.ps1 up             # levanta solo el stack de analítica
+.\win.ps1 down           # baja el stack conservando volúmenes
+.\win.ps1 down-v         # baja el stack y elimina volúmenes
+.\win.ps1 logs           # sigue los logs en tiempo real
+.\win.ps1 ps             # estado de todos los contenedores
+.\win.ps1 beeline        # abre Beeline en HiveServer2
+.\win.ps1 neo4j-shell    # abre Cypher Shell en Neo4J
+.\win.ps1 spark-shell    # abre Spark Shell
+.\win.ps1 neo4j-load     # recarga el grafo desde los CSVs
+.\win.ps1 neo4j-analysis # ejecuta las queries de análisis
+.\win.ps1 spark-sample   # corre el job de Spark con datos de muestra
+```
+
+Si el Proyecto 1 está en una ruta diferente, pasá `-P1` igual que con `setup.ps1`:
+
+```powershell
+.\win.ps1 teardown -P1 "C:\ruta\al\Restaurants-e2"
+```
 
 ---
 
