@@ -32,6 +32,8 @@ Paso a paso para levantar, operar y bajar el stack sin usar `make setup`.
 - Go (para el seed del Proyecto 1)
 - El repo de Proyecto 1 en `../Restaurants-e2` (o ajustar las rutas)
 
+> **Windows:** todos los comandos de este manual usan sintaxis bash (macOS/Linux/WSL2). Si usás PowerShell nativo, ver las equivalencias en la tabla de la sección [Windows en el README](README.md#setup-en-windows-powershell). Los comandos `docker exec` y `docker compose` son idénticos en ambas plataformas; las diferencias están en la redirección de stdin (`<`) y la expansión de variables (`$(...)`), que en PowerShell se reemplazan por `Get-Content` y `$(...)` respectivamente.
+
 ---
 
 ## 1. Configurar el entorno
@@ -389,6 +391,76 @@ docker exec -it ra_spark_master /opt/spark/bin/spark-shell \
 
 # Verificar que analytics-db tiene las 3 bases
 docker exec ra_analytics_db psql -U analytics -d hive_metastore -c "\l"
+```
+
+---
+
+## Equivalencias PowerShell (Windows sin WSL2)
+
+Los comandos `docker exec` son idénticos en Windows. Lo que cambia es la redirección de stdin y la expansión de variables del shell.
+
+### Redirigir archivos a docker exec
+
+```bash
+# bash
+docker exec -i ra_hive_server beeline ... < hive/schema/01_dimensions.hql
+```
+
+```powershell
+# PowerShell
+Get-Content hive\schema\01_dimensions.hql | docker exec -i ra_hive_server beeline ...
+```
+
+### Extraer valor del .env
+
+```bash
+# bash
+NEO4J_PWD=$(grep NEO4J_PASSWORD .env | cut -d= -f2)
+```
+
+```powershell
+# PowerShell
+$NEO4J_PWD = (Get-Content .env | Where-Object { $_ -match '^NEO4J_PASSWORD=' }) -replace '^NEO4J_PASSWORD=',''
+```
+
+### Loops de espera
+
+```bash
+# bash
+until docker exec ra_analytics_db pg_isready -U analytics; do
+  sleep 3
+done
+```
+
+```powershell
+# PowerShell
+while ($true) {
+    docker exec ra_analytics_db pg_isready -U analytics 2>$null
+    if ($LASTEXITCODE -eq 0) { break }
+    Start-Sleep -Seconds 3
+}
+```
+
+### Levantar el Proyecto 1 con variable de entorno
+
+```bash
+# bash
+DB_ENGINE=postgres docker compose -f deployments/docker-compose.yml --profile postgres up -d
+```
+
+```powershell
+# PowerShell
+$env:DB_ENGINE = "postgres"
+docker compose -f deployments/docker-compose.yml --profile postgres up -d
+Remove-Item Env:\DB_ENGINE
+```
+
+### Cargar grafo Neo4J (pasos 8.2)
+
+```powershell
+$NEO4J_PWD = (Get-Content .env | Where-Object { $_ -match '^NEO4J_PASSWORD=' }) -replace '^NEO4J_PASSWORD=',''
+Get-Content neo4j\queries\00_constraints.cypher | docker exec -i ra_neo4j cypher-shell -u neo4j -p $NEO4J_PWD
+Get-Content neo4j\queries\01_load_graph.cypher  | docker exec -i ra_neo4j cypher-shell -u neo4j -p $NEO4J_PWD
 ```
 
 ---

@@ -85,7 +85,9 @@ Extiende el [Proyecto 1 (Restaurants-e2)](https://github.com/c4dd3/Restaurants-e
 - El repo del **Proyecto 1** clonado en `../Restaurants-e2` (o indicar ruta con `P1=`)
 - Mínimo **8 GB de RAM** disponibles para Docker
 
-> **Windows:** `make` no está disponible nativamente. Se recomienda usar **WSL2** (Ubuntu desde Microsoft Store), desde donde los comandos funcionan igual que en macOS/Linux.
+> **Windows:** `make` no está disponible nativamente. Tenés dos opciones:
+> - **WSL2** (recomendado): instalá Ubuntu desde Microsoft Store y usá los comandos igual que en macOS/Linux.
+> - **PowerShell nativo**: usá `setup.ps1` incluido en el repo (ver [Setup en Windows](#setup-en-windows-powershell)).
 
 ---
 
@@ -122,6 +124,58 @@ El proceso completo tarda entre 15 y 25 minutos. Al finalizar imprime las URLs y
 | 7 | Crea el esquema Hive: dimensiones, tablas de hechos y vistas OLAP |
 | 8 | Despausa y ejecuta el DAG de ETL en Airflow; espera hasta que termine (máx. 20 min) |
 | 9 | Carga el grafo en Neo4J y configura conexiones y dashboards de Metabase |
+
+---
+
+## Setup en Windows (PowerShell)
+
+Si no usás WSL2, el repo incluye `setup.ps1` que hace exactamente lo mismo que `make setup` pero en PowerShell nativo.
+
+### Requisitos previos en Windows
+
+- **Docker Desktop** con backend WSL2 habilitado
+- **Python 3** instalado y en PATH ([python.org](https://www.python.org/downloads/windows/))
+- **Go 1.21+** instalado y en PATH ([go.dev](https://go.dev/dl/))
+- **PowerShell 5.1+** (incluido en Windows 10/11) o PowerShell 7+
+
+### Primera ejecución: habilitar scripts
+
+Por defecto Windows bloquea la ejecución de scripts `.ps1`. Abrí PowerShell **como administrador** y ejecutá una sola vez:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Correr el setup
+
+```powershell
+git clone https://github.com/c4dd3/Restaurants-analytics
+cd Restaurants-analytics
+.\setup.ps1
+```
+
+Si el Proyecto 1 está en una ruta diferente a `..\Restaurants-e2`:
+
+```powershell
+.\setup.ps1 -P1 "C:\ruta\al\Restaurants-e2"
+```
+
+El proceso tarda entre 15 y 25 minutos. Al finalizar imprime las mismas URLs y credenciales que `make setup`.
+
+### Comandos equivalentes en PowerShell
+
+| `make` (macOS/Linux) | PowerShell (Windows) |
+|----------------------|----------------------|
+| `make setup` | `.\setup.ps1` |
+| `make up` | `docker compose -f deployments/docker-compose.yml --env-file .env up --build -d` |
+| `make down` | `docker compose -f deployments/docker-compose.yml --env-file .env down` |
+| `make down-v` | `docker compose -f deployments/docker-compose.yml --env-file .env down -v` |
+| `make logs` | `docker compose -f deployments/docker-compose.yml --env-file .env logs -f` |
+| `make ps` | `docker compose -f deployments/docker-compose.yml --env-file .env ps` |
+| `make beeline` | `docker exec -it ra_hive_server beeline -u jdbc:hive2://localhost:10000` |
+| `make neo4j-shell` | `docker exec -it ra_neo4j cypher-shell -u neo4j -p Analytics2024!` |
+| `make neo4j-load` | Ver sección [8. Cargar el grafo Neo4J](MANUAL.md#8-cargar-el-grafo-neo4j) |
+| `make spark-job-sample` | `docker exec -it ra_spark_master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/spark-apps/jobs/restaurants_spark_analytics.py --source sample` |
 
 ---
 
