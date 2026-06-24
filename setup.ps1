@@ -106,14 +106,18 @@ Write-Ok "Seed base completado"
 
 # -- [5/9] Seed transacciones -------------------------------------------------
 Write-Header "[5/9] Sembrando transacciones (ordenes + reservaciones)..."
+$ErrorActionPreference = "Continue"
 & $PYTHON -m pip install psycopg2-binary --quiet 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 & $PYTHON scripts/seed_transactions.py --orders 300 --reservations 150
 if ($LASTEXITCODE -ne 0) { Write-Fail "seed_transactions.py fallo" }
 Write-Ok "Transacciones sembradas"
 
 # -- [6/9] Configurar .env y levantar stack -----------------------------------
 Write-Header "[6/9] Configurando .env y levantando stack de analitica..."
+$ErrorActionPreference = "Continue"
 & $PYTHON -m pip install cryptography --quiet 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 & $PYTHON scripts/configure_env.py
 if ($LASTEXITCODE -ne 0) { Write-Fail "configure_env.py fallo" }
 
