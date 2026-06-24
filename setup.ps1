@@ -267,6 +267,9 @@ if ($LASTEXITCODE -ne 0) { Write-Fail "Carga del grafo Neo4J fallo" }
 Write-Ok "Grafo cargado"
 
 Write-Step "Configurando dashboards de Metabase..."
+$ErrorActionPreference = "Continue"
+& $PYTHON -m pip install requests --quiet 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 & $PYTHON dashboards/metabase/setup_metabase.py
 if ($LASTEXITCODE -ne 0) { Write-Warn "setup_metabase.py tuvo errores - revisa manualmente" }
 
